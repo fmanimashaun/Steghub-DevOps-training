@@ -293,8 +293,8 @@ In this guide, you have successfully implemented the LEMP stack on an AWS EC2 in
 - [PHP PDO Documentation](https://www.php.net/manual/en/book.pdo.php)
 - [AWS EC2 Documentation](https://docs.aws.amazon.com/ec2/index.html)
 - [LEMP vs LAMP Stack](https://www.digitalocean.com/community/tutorials/lemp-vs-lamp-whats-the-difference)
-- [Video Tutorial]()
-- [Blog Post]()
+- [Video Tutorial](https://www.youtube.com/watch?v=WTpdTachEmY)
+- [Blog Post](https://fmanimashaun.hashnode.dev/deploying-a-lemp-stack-on-aws-ec2-a-step-by-step-guide?t=1726251972790)
 
 ---
 
