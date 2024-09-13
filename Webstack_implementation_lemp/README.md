@@ -142,6 +142,8 @@ http://<ec2-instance-public-ip>/info.php
 
 ![](img/test-php-installation.png)
 
+> Note: you need to configure the default nginx conf to point to the php by editing the default configuration.
+
 ---
 
 ## Configuring Nginx for PHP Processing
