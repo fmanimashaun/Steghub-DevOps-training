@@ -145,7 +145,6 @@ PM2 was new to me, but I quickly realized its importance:
 
 ```bash
 sudo npm install pm2 -g
-sudo pm2 startup
 ```
 
 Insight: PM2's ability to keep the application running after system reboots is invaluable for maintaining uptime.
@@ -243,8 +242,20 @@ NODE_ENV=production
 
 ```bash
 pm2 start index.js --name mern-app
+```
+
+6. To keep the app running, and ensure automatically restarting in case of crash or system reboot
+
+```bash
+pm2 startup
+
+sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u <linux user> --hp /home/<linux user>
+
 pm2 save
 ```
+
+>In my case, `ubuntu` is the `linux user` for the ec2 instance.
+
 
 ![pm2 status](images/terminal-log.png)
 
