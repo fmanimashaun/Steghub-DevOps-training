@@ -272,6 +272,11 @@ pm2 logs mern-app
 2. Accessed the application at `http://<aws ec2 instance public ip>`.
 ![Final output](images/final-output.png)
 
+3. Testing the backend api with postman
+![Backend API testing for post](images/backend-api-post.png)
+![Backend API testing for get](images/backend-api-get.png)
+![Backend API testing for delete](images/backend-api-delete.png)
+
 Personal Reflections:
 - This process taught me a lot about full-stack deployment in a cloud environment.
 - The importance of security at every step cannot be overstated.
