@@ -120,16 +120,6 @@ Configuring MongoDB for production use was crucial. Here’s what I learned:
     ```bash
     sudo systemctl restart mongod
     ```
-    Now you can connect to MongoDB with authentication:
-    ```bash
-    mongosh --authenticationDatabase "admin" -u "root" -p
-    ```
-
-    Once authenticated, you can remove test databases:
-    ```mongosh
-    use test
-    db.dropDatabase()
-    ```
 
 3. **Setting up a MongoDB user:**
 
