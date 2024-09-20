@@ -82,10 +82,54 @@ Configuring MongoDB for production use was crucial. Here’s what I learned:
 
 > **Insight:** While this allows remote connections, it’s essential to understand the security implications. In a real production environment, I would limit this to specific IP addresses. For my case, I kept the default configuration because there was no intention to communicate with MongoDB remotely.
 
-2. **Setting up a MongoDB user:**
-
+2. **Secure the the Mongodb:**
+    Start MongoDB without authentication enabled:
     ```bash
     mongosh
+    ```
+    Connect to MongoDB and create the admin user:
+   ```mongosh
+    use admin
+    ```
+    ```mongosh
+    use admin
+
+    db.createUser(
+        {
+            user: "root",
+            pwd: "Password.1",
+            roles: [ { role: "userAdminAnyDatabase", db: "admin" }, "readWriteAnyDatabase" ]
+        }
+    )
+
+    exit
+    ```
+    Now, edit the MongoDB configuration file (usually /etc/mongod.conf on Linux systems) to enable authentication:
+    ```yaml
+    security:
+        authorization: enabled
+    ```
+    > **Insight:** Enabling authentication is crucial for security. Without it, anyone could potentially access your database.
+
+    Restart the MongoDB service to apply the changes.
+    ```bash
+    sudo systemctl restart mongo
+    ```
+    Now you can connect to MongoDB with authentication:
+    ```bash
+    mongosh --authenticationDatabase "admin" -u "root" -p
+    ```
+
+    Once authenticated, you can remove test databases:
+    ```mongosh
+    use test
+    db.dropDatabase()
+    ```
+
+3. **Setting up a MongoDB user:**
+
+    ```bash
+     mongosh --authenticationDatabase "admin" -u "root" -p
     ```
 
     ```mongosh
@@ -98,21 +142,6 @@ Configuring MongoDB for production use was crucial. Here’s what I learned:
     ```
 
 > **Personal Note:** Creating a specific user for the application, rather than using the root user, is a best practice I’m glad I followed. You can set your own password; `Password.1` is used here for demonstration purposes.
-
-3. **Enabling authentication:**
-
-    ```bash
-    sudo nano /etc/mongod.conf
-    ```
-
-    Added:
-
-    ```yaml
-    security:
-      authorization: enabled
-    ```
-
-> **Insight:** Enabling authentication is crucial for security. Without it, anyone could potentially access your database.
 
 The resulting connection string:
 
