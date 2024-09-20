@@ -113,7 +113,7 @@ Configuring MongoDB for production use was crucial. Here’s what I learned:
 
     Restart the MongoDB service to apply the changes.
     ```bash
-    sudo systemctl restart mongo
+    sudo systemctl restart mongod
     ```
     Now you can connect to MongoDB with authentication:
     ```bash
