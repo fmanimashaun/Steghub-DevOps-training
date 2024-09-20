@@ -1,6 +1,6 @@
-# Implementing MERN Stack on AWS EC2 with Self-Hosted MongoDB: My Learning Journey
+# Implementing MEAN Stack on AWS EC2 with Self-Hosted MongoDB: My Learning Journey
 
-This README documents my personal experience setting up a MERN (MongoDB, Express, React, Node.js) stack application on an AWS EC2 instance for production, using a self-hosted MongoDB database. I’ll share insights, challenges, and lessons learned throughout the process.
+This README documents my personal experience setting up a MEAN (MongoDB, Express, Angular, Node.js) stack application on an AWS EC2 instance for production, using a self-hosted MongoDB database. I’ll share insights, challenges, and lessons learned throughout the process.
 
 ## Table of Contents
 
@@ -10,7 +10,7 @@ This README documents my personal experience setting up a MERN (MongoDB, Express
 4. [Installing Node.js](#installing-nodejs)
 5. [Setting Up PM2 Process Manager](#setting-up-pm2-process-manager)
 6. [Installing and Configuring Nginx](#installing-and-configuring-nginx)
-7. [Deploying the MERN Application](#deploying-the-mern-application)
+7. [Deploying the MEAN Application](#deploying-the-mean-application)
 8. [Final Steps and Reflections](#final-steps-and-reflections)
 
 ## Prerequisites
@@ -18,7 +18,7 @@ This README documents my personal experience setting up a MERN (MongoDB, Express
 Before starting this journey, I ensured I had:
 - An AWS EC2 instance running Ubuntu
 - Basic knowledge of Linux commands
-- A MERN stack application ready for deployment
+- A MEAN stack application ready for deployment
 
 > **Personal Note:** Setting up the EC2 instance was straightforward, but I recommend thoroughly understanding AWS security groups and network settings before proceeding. See my [previous video](https://youtu.be/5K0mHssuN-I) on how to set it up.
 
@@ -89,11 +89,11 @@ Configuring MongoDB for production use was crucial. Here’s what I learned:
     ```
 
     ```mongosh
-    use sample_todo_app
+    use sample_book_register_app
     db.createUser({
-      user: "sampleTodoUser",
+      user: "bookRegisterUser",
       pwd: "Password.1",
-      roles: [{ role: "readWrite", db: "sample_todo_app" }]
+      roles: [{ role: "readWrite", db: "sample_book_register_app" }]
     })
     ```
 
@@ -117,7 +117,7 @@ Configuring MongoDB for production use was crucial. Here’s what I learned:
 The resulting connection string:
 
 ```
-mongodb://sampleTodoUser:Password.1@localhost:27017/sample_todo_app?authSource=sample_todo_app
+mongodb://bookRegisterUser:Password.1@localhost:27017/sample_book_register_app?authSource=sample_book_register_app
 ```
 
 ![MongoDB Shell](images/mongodb-shell.png)
@@ -162,7 +162,7 @@ Setting up Nginx as a reverse proxy was an enlightening experience:
 2. Created a custom Nginx configuration:
 
     ```bash
-    sudo nano /etc/nginx/sites-available/sample_todo_app
+    sudo nano /etc/nginx/sites-available/sample_book_register_app
     ```
 
 Configuration:
@@ -187,7 +187,7 @@ server {
 3. Activated the new configuration and deactivated the default:
 
     ```bash
-    sudo ln -s /etc/nginx/sites-available/sample_todo_app /etc/nginx/sites-enabled/
+    sudo ln -s /etc/nginx/sites-available/sample_book_register_app /etc/nginx/sites-enabled/
     sudo nginx -t
     sudo unlink /etc/nginx/sites-enabled/default
     sudo systemctl restart nginx
@@ -195,33 +195,39 @@ server {
 
 > **Insight:** The symlink approach for managing Nginx configurations is elegant and makes it easy to enable or disable sites.
 
-## Deploying the MERN Application
+## Deploying the MEAN Application
 
 Finally, the moment of truth—deploying the application:
 
-1. Cloned the repository:
+1. Install the Angular-cli:
 
     ```bash
-    git clone https://github.com/fmanimashaun/sample-todo-app.git
+    sudo npm install -g @angular/cli
     ```
 
-2. Set up the frontend:
+2. Cloned the repository:
+
+    ```bash
+    git clone https://github.com/fmanimashaun/sample-book-register-app.git
+    ```
+
+3. Set up the frontend:
 
     ```bash
     cd sample-todo-app/client
     sudo npm i && sudo npm run build
     ```
 
-> **Personal Note:** Deploying a MERN app to production without external services was quite interesting.
+> **Personal Note:** Deploying a MEAN app to production without external services was quite interesting.
 
-3. Set up the backend:
+4. Set up the backend:
 
     ```bash
     cd ../backend
     sudo npm i
     ```
 
-4. Created the `.env` file inside the backend folder:
+5. Created the `.env` file inside the backend folder:
 
     ```bash
     sudo nano .env
@@ -230,20 +236,20 @@ Finally, the moment of truth—deploying the application:
 Content:
 
 ```
-PORT=5001
-DB=mongodb://sampleTodoUser:Password.1@localhost:27017/sample_todo_app?authSource=sample_todo_app
+PORT=5000
+DB=mongodb://bookRegisterUser:Password.1@localhost:27017/sample_book_register_app?authSource=sample_book_register_app
 NODE_ENV=production
 ```
 
 > **Insight:** Using environment variables is crucial for maintaining security and flexibility across different deployment environments.
 
-5. Started the application with PM2:
+6. Started the application with PM2:
 
     ```bash
-    pm2 start index.js --name mern-app
+    pm2 start index.js --name mean-app
     ```
 
-6. Kept the app running and ensured it restarted automatically after crashes or system reboots:
+7. Kept the app running and ensured it restarted automatically after crashes or system reboots:
 
     ```bash
     pm2 startup
@@ -262,7 +268,7 @@ In my case, `ubuntu` is the `linux user` for the EC2 instance.
 1. Checked the process status:
 
     ```bash
-    pm2 logs mern-app
+    pm2 logs mean-app
     ```
 
 2. Accessed the application at `http://<aws-ec2-instance-public-ip>`. 
