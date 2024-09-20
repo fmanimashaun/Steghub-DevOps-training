@@ -229,7 +229,7 @@ Finally, the moment of truth—deploying the application:
     sudo npm install -g @angular/cli
     ```
 
-2. Cloned the repository:
+2. Clone the MEAN Stack project repository:
 
     ```bash
     git clone https://github.com/fmanimashaun/sample-book-register-app.git
