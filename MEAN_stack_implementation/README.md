@@ -105,6 +105,11 @@ Configuring MongoDB for production use was crucial. Here’s what I learned:
     exit
     ```
     Now, edit the MongoDB configuration file (usually /etc/mongod.conf on Linux systems) to enable authentication:
+      ```bash
+    sudo nano /etc/mongod.conf
+    ```
+
+    Changed the `security` setting:
     ```yaml
     security:
         authorization: enabled
