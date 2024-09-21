@@ -238,7 +238,7 @@ Finally, the moment of truth—deploying the application:
 3. Set up the frontend:
 
     ```bash
-    cd sample-todo-app/client
+    cd sample-book-register-app/client
     sudo npm i && sudo npm run build
     ```
 
