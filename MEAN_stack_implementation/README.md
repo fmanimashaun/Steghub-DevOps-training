@@ -299,11 +299,39 @@ In my case, `ubuntu` is the `linux user` for the EC2 instance.
 
     ![Final Output](images/final-output.png)
 
-3. Tested the backend API using Postman:
+
+3. Tested the backend API using Postman and Browser:
+
+    sample datas to use:
+
+    ```bash
+    [
+        {
+            "name": "The Pragmatic Programmer",
+            "isbn": "978-0201616224",
+            "author": "Andrew Hunt, David Thomas",
+            "pages": 352
+        },
+        {
+            "name": "Clean Code",
+            "isbn": "978-0132350884",
+            "author": "Robert C. Martin",
+            "pages": 464
+        },
+        {
+            "name": "You Don’t Know JS: Scope & Closures",
+            "isbn": "978-1449335588",
+            "author": "Kyle Simpson",
+            "pages": 98
+        }
+    ]
+    ```
 
     ![Backend API Testing](images/backend-api-post.png)
     ![Backend API Get](images/backend-api-get.png)
     ![Backend API Delete](images/backend-api-delete.png)
+
+
 
 ### Personal Reflections
 
