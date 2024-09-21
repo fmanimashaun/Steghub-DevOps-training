@@ -24,6 +24,13 @@ Before starting this journey, I ensured I had:
 
 > Ensure that ports 5000 and 27017 are open in the security group.
 
+>NB: if you have issues connecting to your ssh and you have checked that all configurations, security group and all are correct by your ssh command refused to work, kindly run the command below:
+
+```bash
+sudo xattr -c <key-pair.pem> // make sure you are inside the folder that has the kep-pair.pem
+sudo chmod 400 <key-pair.pem>
+```
+
 ## Installing MongoDB
 
 Installing MongoDB was more involved than I initially thought. Here's what I did:
