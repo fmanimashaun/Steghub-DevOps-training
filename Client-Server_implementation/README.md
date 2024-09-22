@@ -27,31 +27,115 @@ Before starting this project, I ensured the following:
 
 ![Placeholder: AWS EC2 Instances](images/aws-ec2-overview.png)
 
-## Installing MySQL Server on Instance B
+# Installing and Configuring MySQL Server on Instance B
 
-Setting up MySQL server on **Instance B** was relatively straightforward. Here’s what I did:
+Setting up MySQL server on **Instance B** involves several steps, including installation, secure configuration, and potentially troubleshooting root access. Here's a comprehensive guide:
+
+## Installation
 
 1. SSH into **Instance B**.
-2. Installed MySQL server:
+2. Update package lists and install MySQL server:
     ```bash
     sudo apt update
     sudo apt install mysql-server -y
     ```
-3. Started the MySQL service:
+
+## Initial Configuration
+
+3. **Set the Root Password**:
+   Before running the `mysql_secure_installation` script, set a password for the root user:
+    ```bash
+    sudo mysql
+    ```
+   Then, run:
+    ```sql
+    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'your_strong_password';
+    FLUSH PRIVILEGES;
+    EXIT;
+    ```
+
+4. **Secure the MySQL Installation**:
+    Run the secure installation script:
+    ```bash
+    sudo mysql_secure_installation
+    ```
+   This script helps set up additional security measures, such as removing anonymous users, disabling remote root login, and removing test databases.
+
+5. Start and enable the MySQL service:
     ```bash
     sudo systemctl start mysql
     sudo systemctl enable mysql
     ```
-4. Verified MySQL installation:
+
+6. Verify MySQL installation:
     ```bash
     sudo systemctl status mysql
     ```
 
-> **Personal Note:** The process was seamless, but I highly recommend checking the MySQL service status to ensure it's running as expected.
+## Troubleshooting: Regaining Root Access
+
+If you find yourself locked out of the MySQL root account (e.g., if you ran `mysql_secure_installation` without setting a root password), follow these steps:
+
+1. Stop the MySQL service:
+    ```bash
+    sudo systemctl stop mysql
+    ```
+
+2. Create the necessary directory for MySQL (if it doesn't exist):
+    ```bash
+    sudo mkdir -p /var/run/mysqld
+    sudo chown mysql:mysql /var/run/mysqld
+    ```
+
+3. Start MySQL in safe mode (skipping grant tables):
+    ```bash
+    sudo mysqld_safe --skip-grant-tables &
+    ```
+
+4. Connect to MySQL as root:
+    ```bash
+    mysql -u root
+    ```
+
+5. Reset the root password:
+    ```sql
+    USE mysql;
+    UPDATE mysql.user SET authentication_string=NULL WHERE user='root';
+    FLUSH PRIVILEGES;
+    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'new_strong_password';
+    FLUSH PRIVILEGES;
+    EXIT;
+    ```
+
+6. Stop the MySQL safe mode process:
+    ```bash
+    sudo killall mysqld
+    ```
+
+7. Start MySQL normally:
+    ```bash
+    sudo systemctl start mysql
+    ```
+
+8. Log in with the new password:
+    ```bash
+    mysql -u root -p
+    ```
+
+## Best Practices and Tips
+
+- Always set a strong root password before running `mysql_secure_installation`.
+- Regularly backup your databases using `mysqldump`.
+- Consider creating a separate admin user for day-to-day database management instead of using the root user.
+- Keep your MySQL server updated to ensure you have the latest security patches.
+- Enable binary logging for point-in-time recovery capabilities if needed.
+
+> **Note:** The process should be seamless if you follow these steps. Always verify the MySQL service status after configuration changes to ensure it's running as expected.
 
 ### Placeholder Image: MySQL Server Status
 
 ![Placeholder: MySQL Server Status](images/mysql-server-status.png)
+
 
 ## Configuring MySQL for Remote Access
 
@@ -77,10 +161,16 @@ Configuring MySQL for remote access is essential for connecting from **Instance 
     ```
 
 > **Insight:** Be careful when allowing remote access by setting the `bind-address` to `0.0.0.0`, as it opens MySQL to all IP addresses. For security reasons, I would recommend specifying trusted IPs in production environments.
-
 ### Placeholder Image: MySQL Config for Remote Access
 
 ![Placeholder: MySQL Config](images/mysql-config-remote.png)
+
+### Difference between `bind-address` and `mysqlx-bind-address`
+
+- **`bind-address`**: This setting configures which IP address MySQL listens to for **standard MySQL client connections** (typically on port 3306). Setting it to `0.0.0.0` allows connections from any IP address.
+  
+- **`mysqlx-bind-address`**: This setting is used for the **MySQL X Protocol**, which enables document-based CRUD operations and JSON-based interactions, typically on port 33060. If you're not using X Protocol, you may leave this at the default value. For security, it’s good to keep it limited to `127.0.0.1` unless X Protocol access from remote instances is required.
+
 
 ## Installing MySQL Client on Instance A
 
