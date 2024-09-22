@@ -32,8 +32,6 @@ Before starting this project, I ensured the following:
 
 > **Personal Note:** Having a solid understanding of AWS security group settings is crucial for controlling traffic between EC2 instances. I ensured that the correct ports were open (specifically port 3306 for MySQL).
 
-### Placeholder Image: AWS EC2 Instances Overview
-
 ![Placeholder: AWS EC2 Instances](images/aws-ec2-overview.png)
 
 ## Architecture Overview
@@ -98,8 +96,6 @@ sudo systemctl enable mysql
 ```bash
 sudo systemctl status mysql
 ```
-
-### Placeholder Image: MySQL Server Status
 
 ![Placeholder: MySQL Server Status](images/mysql-server-status.png)
 
@@ -179,8 +175,6 @@ FLUSH PRIVILEGES;
 
 > **Insight:** Be careful when allowing remote access by setting the `bind-address` to `0.0.0.0`, as it opens MySQL to all IP addresses. For security reasons, I would recommend specifying trusted IPs in production environments.
 
-### Placeholder Image: MySQL Config for Remote Access
-
 ![Placeholder: MySQL Config](images/mysql-config-remote.png)
 
 ## Setting Up MySQL Client (mysql-client instance)
@@ -201,10 +195,6 @@ mysql --version
 
 > **Personal Note:** The installation was smooth, but remember to ensure that both instances are on the same VPC for better connectivity and security.
 
-### Placeholder Image: MySQL Client Installation
-
-![Placeholder: MySQL Client Installation](images/mysql-client-install.png)
-
 ## AWS Security Group Configuration
 
 Instead of configuring a firewall directly on the instance, I opted to manage traffic through AWS Security Groups. Here's how I set it up:
@@ -223,8 +213,6 @@ Instead of configuring a firewall directly on the instance, I opted to manage tr
 
 > **Insight:** Managing security at the AWS level adds an extra layer of control and allows more granular access management without modifying the server directly.
 
-### Placeholder Image: AWS Security Group Rules
-
 ![Placeholder: AWS Security Group](images/aws-security-group-rules.png)
 
 ## Establishing Connection
@@ -241,8 +229,6 @@ mysql -h <mysql-server Private IP> -u remote_user -p
 
 > **Personal Note:** This step marked the success of my setup. The correct security group configuration was key to getting this working properly.
 
-### Placeholder Image: MySQL Client Connected to Server
-
 ![Placeholder: MySQL Client Connected](images/mysql-client-connected.png)
 
 ## Network Diagnostics: Ping and Traceroute
@@ -255,10 +241,6 @@ To test the network connectivity between the instances, I used the `ping` comman
 ping <mysql-server Private IP>
 ```
 
-### Placeholder Image: Ping Results
-
-![Placeholder: Ping Results](images/ping-results.png)
-
 ### 2. Traceroute
 
 For a detailed path analysis, I used `traceroute`:
@@ -269,9 +251,7 @@ traceroute <mysql-server Private IP>
 
 > **Personal Note:** Both `ping` and `traceroute` were helpful in diagnosing any connectivity issues, ensuring that mysql-client could communicate with mysql-server over the internal network.
 
-### Placeholder Image: Traceroute Results
-
-![Placeholder: Traceroute Results](images/traceroute-results.png)
+![Placeholder: Traceroute Results](images/ping-traceroute-results.png)
 
 ## Final Steps and Reflections
 
@@ -285,8 +265,6 @@ traceroute <mysql-server Private IP>
     ```
 
 2. **Security**: I ensured that the security group rules were correctly configured and only allowed traffic between the two instances.
-
-### Placeholder Image: MySQL Database Creation
 
 ![Placeholder: MySQL Database Creation](images/mysql-db-create.png)
 
