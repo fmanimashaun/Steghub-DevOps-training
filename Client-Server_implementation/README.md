@@ -1,25 +1,34 @@
 # Setting Up Client-Server Architecture with MySQL on AWS EC2: My Learning Journey
 
-This README documents my experience configuring a client-server architecture using MySQL with two AWS EC2 instances. I’ll share the steps I took, the challenges encountered, and the insights I gained along the way.
+This README documents my experience configuring a client-server architecture using MySQL with two AWS EC2 instances. I'll share the steps I took, the challenges encountered, and the insights I gained along the way.
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Installing MySQL Server on Instance B](#installing-mysql-server-on-instance-b)
-3. [Configuring MySQL for Remote Access](#configuring-mysql-for-remote-access)
-4. [Installing MySQL Client on Instance A](#installing-mysql-client-on-instance-a)
-5. [AWS Security Group Configuration](#aws-security-group-configuration)
-6. [Connecting MySQL Client to MySQL Server](#connecting-mysql-client-to-mysql-server)
-7. [Network Diagnostics: Ping and Traceroute](#network-diagnostics-ping-and-traceroute)
-8. [Final Steps and Reflections](#final-steps-and-reflections)
-9. [Additional Notes](#additional-notes)
+1. [Introduction](#introduction)
+2. [Prerequisites](#prerequisites)
+3. [Architecture Overview](#architecture-overview)
+4. [Setting Up MySQL Server (mysql-server instance)](#setting-up-mysql-server-mysql-server-instance)
+   - [Installation](#installation)
+   - [Initial Configuration](#initial-configuration)
+   - [Troubleshooting: Regaining Root Access](#troubleshooting-regaining-root-access)
+5. [Configuring MySQL for Remote Access](#configuring-mysql-for-remote-access)
+6. [Setting Up MySQL Client (mysql-client instance)](#setting-up-mysql-client-mysql-client-instance)
+7. [AWS Security Group Configuration](#aws-security-group-configuration)
+8. [Establishing Connection](#establishing-connection)
+9. [Network Diagnostics: Ping and Traceroute](#network-diagnostics-ping-and-traceroute)
+10. [Final Steps and Reflections](#final-steps-and-reflections)
+11. [Additional Notes](#additional-notes)
+
+## Introduction
+
+This guide documents my journey in setting up a client-server architecture using MySQL on two AWS EC2 instances. I'll share not just the steps, but also the challenges I faced and the insights I gained. Whether you're a beginner or an experienced user, I hope my experience helps you in your own setup.
 
 ## Prerequisites
 
 Before starting this project, I ensured the following:
-- Two AWS EC2 instances (referred to as Instance A and Instance B) running Ubuntu.
+- Two AWS EC2 instances (named mysql-server and mysql-client) running Ubuntu.
 - Basic knowledge of AWS security groups, Linux commands, and MySQL database operations.
-- Installed MySQL server on Instance B and MySQL client on Instance A.
+- SSH access to both instances.
 
 > **Personal Note:** Having a solid understanding of AWS security group settings is crucial for controlling traffic between EC2 instances. I ensured that the correct ports were open (specifically port 3306 for MySQL).
 
@@ -27,165 +36,168 @@ Before starting this project, I ensured the following:
 
 ![Placeholder: AWS EC2 Instances](images/aws-ec2-overview.png)
 
-# Installing and Configuring MySQL Server on Instance B
+## Architecture Overview
 
-Setting up MySQL server on **Instance B** involves several steps, including installation, secure configuration, and potentially troubleshooting root access. Here's a comprehensive guide:
+My setup consists of:
 
-## Installation
+- **mysql-client**: MySQL Client instance
+- **mysql-server**: MySQL Server instance
 
-1. SSH into **Instance B**.
-2. Update package lists and install MySQL server:
-    ```bash
-    sudo apt update
-    sudo apt install mysql-server -y
-    ```
+Both instances are in the same VPC for better security and performance.
 
-## Initial Configuration
+```mermaid
+graph LR
+    A[mysql-client<br>MySQL Client] -->|Connects to| B[mysql-server<br>MySQL Server]
+    B -->|Responds to| A
+    C[AWS Security Group] -->|Controls traffic| A
+    C -->|Controls traffic| B
+```
 
-3. **Set the Root Password**:
-   Before running the `mysql_secure_installation` script, set a password for the root user:
-    ```bash
-    sudo mysql
-    ```
-   Then, run:
-    ```sql
-    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'your_strong_password';
-    FLUSH PRIVILEGES;
-    EXIT;
-    ```
+> **Personal Insight:** Initially, I tried to set up the instances in different VPCs, which led to connectivity issues. Keeping them in the same VPC simplified the setup significantly.
 
-4. **Secure the MySQL Installation**:
-    Run the secure installation script:
-    ```bash
-    sudo mysql_secure_installation
-    ```
-   This script helps set up additional security measures, such as removing anonymous users, disabling remote root login, and removing test databases.
+## Setting Up MySQL Server (mysql-server instance)
 
-5. Start and enable the MySQL service:
-    ```bash
-    sudo systemctl start mysql
-    sudo systemctl enable mysql
-    ```
+### Installation
 
-6. Verify MySQL installation:
-    ```bash
-    sudo systemctl status mysql
-    ```
+1. I SSH'd into the mysql-server instance.
+2. Updated package lists and installed MySQL server:
 
-## Troubleshooting: Regaining Root Access
+```bash
+sudo apt update
+sudo apt install mysql-server -y
+```
 
-If you find yourself locked out of the MySQL root account (e.g., if you ran `mysql_secure_installation` without setting a root password), follow these steps:
+### Initial Configuration
 
-1. Stop the MySQL service:
-    ```bash
-    sudo systemctl stop mysql
-    ```
+1. Set the root password:
 
-2. Create the necessary directory for MySQL (if it doesn't exist):
-    ```bash
-    sudo mkdir -p /var/run/mysqld
-    sudo chown mysql:mysql /var/run/mysqld
-    ```
+```bash
+sudo mysql
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'your_strong_password';
+FLUSH PRIVILEGES;
+EXIT;
+```
 
-3. Start MySQL in safe mode (skipping grant tables):
-    ```bash
-    sudo mysqld_safe --skip-grant-tables &
-    ```
+2. Ran the secure installation script:
 
-4. Connect to MySQL as root:
-    ```bash
-    mysql -u root
-    ```
+```bash
+sudo mysql_secure_installation
+```
 
-5. Reset the root password:
-    ```sql
-    USE mysql;
-    UPDATE mysql.user SET authentication_string=NULL WHERE user='root';
-    FLUSH PRIVILEGES;
-    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'new_strong_password';
-    FLUSH PRIVILEGES;
-    EXIT;
-    ```
+> **Personal Note:** I initially ran the `mysql_secure_installation` script without setting the root password first. This locked me out of the root account, leading to a valuable lesson on the importance of following the correct sequence of steps.
 
-6. Stop the MySQL safe mode process:
-    ```bash
-    sudo killall mysqld
-    ```
+3. Started and enabled the MySQL service:
 
-7. Start MySQL normally:
-    ```bash
-    sudo systemctl start mysql
-    ```
+```bash
+sudo systemctl start mysql
+sudo systemctl enable mysql
+```
 
-8. Log in with the new password:
-    ```bash
-    mysql -u root -p
-    ```
+4. Verified the installation:
 
-## Best Practices and Tips
-
-- Always set a strong root password before running `mysql_secure_installation`.
-- Regularly backup your databases using `mysqldump`.
-- Consider creating a separate admin user for day-to-day database management instead of using the root user.
-- Keep your MySQL server updated to ensure you have the latest security patches.
-- Enable binary logging for point-in-time recovery capabilities if needed.
-
-> **Note:** The process should be seamless if you follow these steps. Always verify the MySQL service status after configuration changes to ensure it's running as expected.
+```bash
+sudo systemctl status mysql
+```
 
 ### Placeholder Image: MySQL Server Status
 
 ![Placeholder: MySQL Server Status](images/mysql-server-status.png)
 
+### Troubleshooting: Regaining Root Access
+
+I accidentally locked myself out of the root account by running `mysql_secure_installation` before setting the root password. Here's how I regained access:
+
+1. Stopped MySQL:
+
+```bash
+sudo systemctl stop mysql
+```
+
+2. Started MySQL in safe mode:
+
+```bash
+sudo mkdir -p /var/run/mysqld
+sudo chown mysql:mysql /var/run/mysqld
+sudo mysqld_safe --skip-grant-tables &
+```
+
+3. Reset the root password:
+
+```sql
+mysql -u root
+USE mysql;
+UPDATE mysql.user SET authentication_string=NULL WHERE user='root';
+FLUSH PRIVILEGES;
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'new_strong_password';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+4. Restarted MySQL normally:
+
+```bash
+sudo killall mysqld
+sudo systemctl start mysql
+```
+
+> **Personal Insight:** This experience taught me the importance of carefully following the correct sequence of steps when setting up MySQL, especially when it comes to root access and running security scripts.
 
 ## Configuring MySQL for Remote Access
 
-Configuring MySQL for remote access is essential for connecting from **Instance A**. Here's what I did:
-
 1. Opened the MySQL configuration file:
-    ```bash
-    sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
-    ```
-2. Modified the `bind-address` to allow remote connections:
-    ```ini
-    bind-address = 0.0.0.0
-    ```
+
+```bash
+sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+```
+
+2. Identified and modified two bind-address settings:
+
+```ini
+bind-address = 0.0.0.0
+mysqlx-bind-address = 127.0.0.1
+```
+
+> **Personal Note:** I found two bind-address settings in the configuration file, which initially confused me. Here's what I learned about each:
+> 
+> - **`bind-address`**: This setting configures which IP address MySQL listens to for **standard MySQL client connections** (typically on port 3306). Setting it to `0.0.0.0` allows connections from any IP address.
+>   
+> - **`mysqlx-bind-address`**: This setting is used for the **MySQL X Protocol**, which enables document-based CRUD operations and JSON-based interactions, typically on port 33060. I left this at the default value of `127.0.0.1` since I wasn't using X Protocol features.
+
 3. Restarted MySQL:
-    ```bash
-    sudo systemctl restart mysql
-    ```
+
+```bash
+sudo systemctl restart mysql
+```
+
 4. Created a MySQL user for remote access:
-    ```sql
-    CREATE USER 'remote_user'@'%' IDENTIFIED BY 'password';
-    GRANT ALL PRIVILEGES ON *.* TO 'remote_user'@'%';
-    FLUSH PRIVILEGES;
-    ```
+
+```sql
+CREATE USER 'remote_user'@'%' IDENTIFIED WITH mysql_native_password BY 'Password.1';
+GRANT ALL PRIVILEGES ON *.* TO 'remote_user'@'%';
+FLUSH PRIVILEGES;
+```
 
 > **Insight:** Be careful when allowing remote access by setting the `bind-address` to `0.0.0.0`, as it opens MySQL to all IP addresses. For security reasons, I would recommend specifying trusted IPs in production environments.
+
 ### Placeholder Image: MySQL Config for Remote Access
 
 ![Placeholder: MySQL Config](images/mysql-config-remote.png)
 
-### Difference between `bind-address` and `mysqlx-bind-address`
+## Setting Up MySQL Client (mysql-client instance)
 
-- **`bind-address`**: This setting configures which IP address MySQL listens to for **standard MySQL client connections** (typically on port 3306). Setting it to `0.0.0.0` allows connections from any IP address.
-  
-- **`mysqlx-bind-address`**: This setting is used for the **MySQL X Protocol**, which enables document-based CRUD operations and JSON-based interactions, typically on port 33060. If you're not using X Protocol, you may leave this at the default value. For security, it’s good to keep it limited to `127.0.0.1` unless X Protocol access from remote instances is required.
-
-
-## Installing MySQL Client on Instance A
-
-Next, I set up the MySQL client on **Instance A** to connect to the MySQL server on **Instance B**.
-
-1. SSH into **Instance A**.
+1. SSH'd into the mysql-client instance.
 2. Installed MySQL client:
-    ```bash
-    sudo apt update
-    sudo apt install mysql-client -y
-    ```
+
+```bash
+sudo apt update
+sudo apt install mysql-client -y
+```
+
 3. Verified the installation:
-    ```bash
-    mysql --version
-    ```
+
+```bash
+mysql --version
+```
 
 > **Personal Note:** The installation was smooth, but remember to ensure that both instances are on the same VPC for better connectivity and security.
 
@@ -195,19 +207,19 @@ Next, I set up the MySQL client on **Instance A** to connect to the MySQL server
 
 ## AWS Security Group Configuration
 
-Instead of configuring a firewall directly on the instance, I opted to manage traffic through AWS Security Groups. Here’s how I set it up:
+Instead of configuring a firewall directly on the instance, I opted to manage traffic through AWS Security Groups. Here's how I set it up:
 
-1. **Security Group for Instance B**:
-   - Edited the inbound rules for the security group associated with **Instance B** to allow MySQL traffic from **Instance A**'s private IP.
+1. **Security Group for mysql-server**:
+   - Edited the inbound rules for the security group associated with mysql-server to allow MySQL traffic from mysql-client's private IP.
    - Rule configuration:
      ```
      Type: MySQL/Aurora
      Protocol: TCP
      Port Range: 3306
-     Source: <Instance A Private IP>/32
+     Source: <mysql-client Private IP>/32
      ```
 
-2. **Instance A**: Ensured **Instance A** had the necessary rules for SSH access.
+2. **mysql-client**: Ensured mysql-client had the necessary rules for SSH access.
 
 > **Insight:** Managing security at the AWS level adds an extra layer of control and allows more granular access management without modifying the server directly.
 
@@ -215,15 +227,17 @@ Instead of configuring a firewall directly on the instance, I opted to manage tr
 
 ![Placeholder: AWS Security Group](images/aws-security-group-rules.png)
 
-## Connecting MySQL Client to MySQL Server
+## Establishing Connection
 
-Once the security groups were configured, I connected the MySQL client from **Instance A** to the MySQL server on **Instance B**.
+Once the security groups were configured, I connected the MySQL client from mysql-client to the MySQL server on mysql-server.
 
-1. From **Instance A**, I used the following command to connect:
-    ```bash
-    mysql -h <Instance B Private IP> -u remote_user -p
-    ```
-2. Entered the password when prompted and successfully connected to the MySQL server running on **Instance B**.
+1. From mysql-client, I used the following command to connect:
+
+```bash
+mysql -h <mysql-server Private IP> -u remote_user -p
+```
+
+2. Entered the password when prompted and successfully connected to the MySQL server running on mysql-server.
 
 > **Personal Note:** This step marked the success of my setup. The correct security group configuration was key to getting this working properly.
 
@@ -238,7 +252,7 @@ Once the security groups were configured, I connected the MySQL client from **In
 To test the network connectivity between the instances, I used the `ping` command:
 
 ```bash
-ping <Instance B Private IP>
+ping <mysql-server Private IP>
 ```
 
 ### Placeholder Image: Ping Results
@@ -250,10 +264,10 @@ ping <Instance B Private IP>
 For a detailed path analysis, I used `traceroute`:
 
 ```bash
-traceroute <Instance B Private IP>
+traceroute <mysql-server Private IP>
 ```
 
-> **Personal Note:** Both `ping` and `traceroute` were helpful in diagnosing any connectivity issues, ensuring that **Instance A** could communicate with **Instance B** over the internal network.
+> **Personal Note:** Both `ping` and `traceroute` were helpful in diagnosing any connectivity issues, ensuring that mysql-client could communicate with mysql-server over the internal network.
 
 ### Placeholder Image: Traceroute Results
 
@@ -286,23 +300,26 @@ traceroute <Instance B Private IP>
 
 - Initially, I had connectivity issues due to incorrect security group configurations, but careful adjustments resolved them.
 - Learning how to configure MySQL for remote access was crucial, and understanding the potential security risks helped me secure the setup properly.
+- The accidental root account lockout taught me the importance of following the correct sequence of steps during initial MySQL setup.
 
 ## Additional Notes
 
 ### Running MySQL Instances Across Different Regions or Cloud Providers
 
-It's possible to run MySQL server and client on instances in different regions or even across different cloud environments (e.g., AWS, Google Cloud, or Azure). Here are some things to consider:
+While my setup was within the same AWS region, I learned that it's possible to run MySQL server and client on instances in different regions or even across different cloud environments. Here are some things to consider:
 
-1. **Latency**: Instances in different regions may experience higher latency due to the physical distance between the servers. Choose regions close to each other to minimize latency.
+1. **Latency**: Instances in different regions may experience higher latency. Choose regions close to each other to minimize this.
 
 2. **Networking**: 
-   - Ensure that the instances are correctly networked, possibly using a VPN, VPC peering, or private links across clouds to maintain secure communication.
-   - When instances are in different cloud environments, consider using services like **AWS Direct Connect**, **Azure ExpressRoute**, or **Google Cloud Interconnect** to establish private and secure communication channels.
+   - Ensure instances are correctly networked, possibly using VPN or VPC peering.
+   - For cross-cloud setups, look into services like AWS Direct Connect or equivalents.
 
 3. **Security**: 
-   - Be mindful of firewall rules, security group settings, and access control lists (ACLs) across different regions or providers to prevent unauthorized access.
-   - Always limit MySQL access to trusted IP addresses or specific regions for better security.
+   - Be extra careful with firewall rules and security groups.
+   - Consider using SSL/TLS for encrypted connections.
 
-4. **Cross-Region Costs**: Transferring data between regions (even within the same cloud provider) or between cloud environments can incur additional charges. Be sure to account for these costs in production setups.
+4. **Costs**: Be aware of potential data transfer costs between regions or cloud providers.
 
-> **Insight**: While cross-region or multi-cloud setups are viable, they require careful planning around networking, security, and costs. In production environments, consider replication strategies like master-slave or master-master replication to improve performance and availability across regions.
+> **Insight**: While cross-region or multi-cloud setups are viable, they require careful planning around networking, security, and costs. In production environments, consider replication strategies for better performance and availability.
+
+This journey taught me a lot about MySQL, AWS, and networking. I hope my experiences and insights help you in your own setup. Remember, patience and persistence are key when working with complex systems like these!
