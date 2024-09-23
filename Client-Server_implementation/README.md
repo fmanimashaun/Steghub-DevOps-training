@@ -67,7 +67,14 @@ sudo apt install mysql-server -y
 
 ### Initial Configuration
 
-1. Set the root password:
+1. Started and enabled the MySQL service:
+
+```bash
+sudo systemctl start mysql
+sudo systemctl enable mysql
+```
+
+2. Set the root password:
 
 ```bash
 sudo mysql
@@ -76,20 +83,13 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-2. Ran the secure installation script:
+3. Ran the secure installation script:
 
 ```bash
 sudo mysql_secure_installation
 ```
 
 > **Personal Note:** I initially ran the `mysql_secure_installation` script without setting the root password first. This locked me out of the root account, leading to a valuable lesson on the importance of following the correct sequence of steps.
-
-3. Started and enabled the MySQL service:
-
-```bash
-sudo systemctl start mysql
-sudo systemctl enable mysql
-```
 
 4. Verified the installation:
 
