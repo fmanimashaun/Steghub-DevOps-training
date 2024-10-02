@@ -1,303 +1,369 @@
-# Setting Up Client-Server Architecture with MySQL on AWS EC2: My Learning Journey
+# Setting Up Client-Server Architecture with WordPress and MySQL on AWS EC2: Infrastructure Setup
 
-This README documents my experience configuring a client-server architecture using MySQL with two AWS EC2 instances. I'll share the steps I took, the challenges encountered, and the insights I gained along the way.
+This README documents the setup process for a client-server architecture using WordPress with MySQL on AWS EC2 instances. It covers infrastructure setup, including Logical Volume Manager (LVM) for managing storage.
+
+## Table of Contents
 
 ## Table of Contents
 
 1. [Introduction](#introduction)
 2. [Prerequisites](#prerequisites)
 3. [Architecture Overview](#architecture-overview)
-4. [Setting Up MySQL Server (mysql-server instance)](#setting-up-mysql-server-mysql-server-instance)
-   - [Installation](#installation)
-   - [Initial Configuration](#initial-configuration)
-   - [Troubleshooting: Regaining Root Access](#troubleshooting-regaining-root-access)
-5. [Configuring MySQL for Remote Access](#configuring-mysql-for-remote-access)
-6. [Setting Up MySQL Client (mysql-client instance)](#setting-up-mysql-client-mysql-client-instance)
-7. [AWS Security Group Configuration](#aws-security-group-configuration)
-8. [Establishing Connection](#establishing-connection)
-9. [Network Diagnostics: Ping and Traceroute](#network-diagnostics-ping-and-traceroute)
-10. [Final Steps and Reflections](#final-steps-and-reflections)
-11. [Additional Notes](#additional-notes)
+4. [Setting Up AWS EC2 Instances](#setting-up-aws-ec2-instances)
+5. [Configuring EBS and Logical Volume Manager (LVM)](#configuring-ebs-and-logical-volume-manager-lvm)
+   - [EBS Setup](#ebs-setup)
+   - [LVM Configuration](#lvm-configuration)
+6. [AWS Security Group Configuration](#aws-security-group-configuration)
+7. [Installing Apache, PHP 8.3, and PHP Extensions on RHEL 9.4](#installing-apache-php-83-and-php-extensions-on-rhel-94)
+   - [Step 1: Verify RHEL Version](#step-1-verify-rhel-version)
+   - [Step 2: Install Apache (httpd)](#step-2-install-apache-httpd)
+   - [Step 3: Enable Necessary Repositories](#step-3-enable-necessary-repositories)
+   - [Step 4: Install PHP 8.3 and Extensions](#step-4-install-php-83-and-extensions)
+   - [Step 5: Configure SELinux (Security-Enhanced Linux)](#step-5-configure-selinux-security-enhanced-linux)
+   - [Step 6: Verify PHP Installation](#step-6-verify-php-installation)
+   - [Step 7: Test PHP Functionality](#step-7-test-php-functionality)
+8. [WordPress Installation](#wordpress-installation)
+9. [Final Steps and Reflections](#final-steps-and-reflections)
+
 
 ## Introduction
 
-This guide documents my journey in setting up a client-server architecture using MySQL on two AWS EC2 instances. I'll share not just the steps, but also the challenges I faced and the insights I gained. Whether you're a beginner or an experienced user, I hope my experience helps you in your own setup.
+This guide details the steps I followed to set up an infrastructure for a WordPress web server and a MySQL database using AWS EC2 instances. The focus is on configuring storage dynamically using Logical Volume Manager (LVM) with Elastic Block Store (EBS) volumes.
 
 ## Prerequisites
 
-Before starting this project, I ensured the following:
-- Two AWS EC2 instances (named mysql-server and mysql-client) running Ubuntu.
-- Basic knowledge of AWS security groups, Linux commands, and MySQL database operations.
+Before starting, I ensured:
+- Two AWS EC2 instances (for WordPress and MySQL) running Red Hat Enterprise Linux 9.4.
+- Familiarity with basic AWS EC2 and LVM concepts.
 - SSH access to both instances.
-
-> **Personal Note:** Having a solid understanding of AWS security group settings is crucial for controlling traffic between EC2 instances. I ensured that the correct ports were open (specifically port 3306 for MySQL).
-
-![Placeholder: AWS EC2 Instances](images/aws-ec2-overview.png)
+- Minimum instance size: t2.small (to avoid issues with package installations).
 
 ## Architecture Overview
 
-My setup consists of:
-
-- **mysql-client**: MySQL Client instance
-- **mysql-server**: MySQL Server instance
-
-Both instances are in the same VPC for better security and performance.
+The architecture consists of:
+- **WordPress instance**: Hosting the application.
+- **MySQL instance**: Hosting the database.
+- **EBS storage**: Three volumes per instance, managed with LVM.
 
 ```mermaid
 graph LR
-    A[mysql-client<br>MySQL Client] -->|Connects to| B[mysql-server<br>MySQL Server]
-    B -->|Responds to| A
-    C[AWS Security Group] -->|Controls traffic| A
-    C -->|Controls traffic| B
+    A[WordPress Instance<br>Application Server] -->|Connects to| B[MySQL Instance<br>Database Server]
+    C[AWS EBS Volumes for WordPress] --> A
+    D[AWS EBS Volumes for MySQL] --> B
 ```
 
-> **Personal Insight:** Initially, I tried to set up the instances in different VPCs, which led to connectivity issues. Keeping them in the same VPC simplified the setup significantly.
+> **Insight:** Using LVM allows dynamic scaling and better management of storage volumes without downtime.
 
-## Setting Up MySQL Server (mysql-server instance)
+## Setting Up AWS EC2 Instances
 
-### Installation
+1. **Launch EC2 Instances**:
+   - Created two EC2 instances running Red Hat Enterprise Linux 9.4 for WordPress and MySQL, ensuring instance size t2.small or larger.
+   
+2. **Attach EBS Volumes**:
+   - Added three EBS volumes to each instance for managing application data and logs. 
 
-1. I SSH'd into the mysql-server instance.
-2. Updated package lists and installed MySQL server:
+## Configuring EBS and Logical Volume Manager (LVM)
 
-```bash
-sudo apt update
-sudo apt install mysql-server -y
-```
+### EBS Setup
 
-### Initial Configuration
+1. **Attach EBS Volumes**:
+   - I attached three EBS volumes (each 20GB) to both the WordPress and MySQL instances via the AWS Management Console.
 
-1. Started and enabled the MySQL service:
+2. **Check Volume Visibility**:
+   After SSH'ing into the instances, I listed the attached block devices using:
 
-```bash
-sudo systemctl start mysql
-sudo systemctl enable mysql
-```
+   ```bash
+   lsblk
+   ```
 
-2. Set the root password:
+   The new volumes appeared as `/dev/nvme1n1`, `/dev/nvme2n1`, and `/dev/nvme3n1`.
 
-```bash
-sudo mysql
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'your_strong_password';
-FLUSH PRIVILEGES;
-EXIT;
-```
+### LVM Configuration
 
-3. Ran the secure installation script:
+1. **Install LVM Tools**:
+   Since Red Hat Enterprise Linux 9.4 was being used, I ensured LVM was installed:
 
-```bash
-sudo mysql_secure_installation
-```
+   ```bash
+   sudo yum install lvm2
+   ```
 
-> **Personal Note:** I initially ran the `mysql_secure_installation` script without setting the root password first. This locked me out of the root account, leading to a valuable lesson on the importance of following the correct sequence of steps.
+2. **Create Physical Volumes**:
+   I converted the three attached EBS volumes into physical volumes (PVs):
 
-4. Verified the installation:
+   ```bash
+   sudo pvcreate /dev/nvme1n1 /dev/nvme2n1 /dev/nvme3n1
+   ```
 
-```bash
-sudo systemctl status mysql
-```
+3. **Create Volume Group**:
+   Next, I created a volume group (VG) to aggregate the PVs:
 
-![Placeholder: MySQL Server Status](images/mysql-server-status.png)
+   ```bash
+   sudo vgcreate vg_wpdata /dev/nvme1n1 /dev/nvme2n1 /dev/nvme3n1
+   ```
 
-### Troubleshooting: Regaining Root Access
+4. **Create Logical Volumes**:
+   I created logical volumes (LVs) for storing WordPress data and logs. Here's how I did it:
 
-I accidentally locked myself out of the root account by running `mysql_secure_installation` before setting the root password. Here's how I regained access:
+   ```bash
+   sudo lvcreate -L 50G -n lv_wpdata vg_wpdata
+   sudo lvcreate -L 10G -n lv_wplogs vg_wpdata
+   ```
 
-1. Stopped MySQL:
+5. **Format and Mount Volumes**:
+   I formatted the new logical volumes and mounted them for use:
 
-```bash
-sudo systemctl stop mysql
-```
+   ```bash
+   sudo mkfs.ext4 /dev/vg_wpdata/lv_wpdata
+   sudo mkfs.ext4 /dev/vg_wpdata/lv_wplogs
+   ```
 
-2. Started MySQL in safe mode:
+   Then mounted them:
 
-```bash
-sudo mkdir -p /var/run/mysqld
-sudo chown mysql:mysql /var/run/mysqld
-sudo mysqld_safe --skip-grant-tables &
-```
+   ```bash
+   sudo mkdir /mnt/wpdata /mnt/wplogs
+   sudo mount /dev/vg_wpdata/lv_wpdata /mnt/wpdata
+   sudo mount /dev/vg_wpdata/lv_wplogs /mnt/wplogs
+   ```
 
-3. Reset the root password:
+6. **Persistent Mounts**:
+   To ensure the volumes are automatically mounted at boot, I updated `/etc/fstab`:
 
-```sql
-mysql -u root
-USE mysql;
-UPDATE mysql.user SET authentication_string=NULL WHERE user='root';
-FLUSH PRIVILEGES;
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'new_strong_password';
-FLUSH PRIVILEGES;
-EXIT;
-```
+   ```bash
+   echo '/dev/vg_wpdata/lv_wpdata /mnt/wpdata ext4 defaults 0 0' | sudo tee -a /etc/fstab
+   echo '/dev/vg_wpdata/lv_wplogs /mnt/wplogs ext4 defaults 0 0' | sudo tee -a /etc/fstab
+   ```
 
-4. Restarted MySQL normally:
-
-```bash
-sudo killall mysqld
-sudo systemctl start mysql
-```
-
-> **Personal Insight:** This experience taught me the importance of carefully following the correct sequence of steps when setting up MySQL, especially when it comes to root access and running security scripts.
-
-## Configuring MySQL for Remote Access
-
-1. Opened the MySQL configuration file:
-
-```bash
-sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
-```
-
-2. Identified and modified two bind-address settings:
-
-```ini
-bind-address = 0.0.0.0
-mysqlx-bind-address = 127.0.0.1
-```
-
-> **Personal Note:** I found two bind-address settings in the configuration file, which initially confused me. Here's what I learned about each:
-> 
-> - **`bind-address`**: This setting configures which IP address MySQL listens to for **standard MySQL client connections** (typically on port 3306). Setting it to `0.0.0.0` allows connections from any IP address.
->   
-> - **`mysqlx-bind-address`**: This setting is used for the **MySQL X Protocol**, which enables document-based CRUD operations and JSON-based interactions, typically on port 33060. I left this at the default value of `127.0.0.1` since I wasn't using X Protocol features.
-
-3. Restarted MySQL:
-
-```bash
-sudo systemctl restart mysql
-```
-
-4. Created a MySQL user for remote access:
-
-```sql
-CREATE USER 'remote_user'@'%' IDENTIFIED WITH mysql_native_password BY 'Password.1';
-GRANT ALL PRIVILEGES ON *.* TO 'remote_user'@'%';
-FLUSH PRIVILEGES;
-```
-
-> **Insight:** Be careful when allowing remote access by setting the `bind-address` to `0.0.0.0`, as it opens MySQL to all IP addresses. For security reasons, I would recommend specifying trusted IPs in production environments.
-
-![Placeholder: MySQL Config](images/mysql-config-remote.png)
-
-## Setting Up MySQL Client (mysql-client instance)
-
-1. SSH'd into the mysql-client instance.
-2. Installed MySQL client:
-
-```bash
-sudo apt update
-sudo apt install mysql-client -y
-```
-
-3. Verified the installation:
-
-```bash
-mysql --version
-```
-
-> **Personal Note:** The installation was smooth, but remember to ensure that both instances are on the same VPC for better connectivity and security.
+> **Insight:** Configuring LVM provided flexibility to scale storage without downtime. For WordPress, separate volumes for data and logs made it easier to manage and monitor disk usage.
 
 ## AWS Security Group Configuration
 
-Instead of configuring a firewall directly on the instance, I opted to manage traffic through AWS Security Groups. Here's how I set it up:
+Security groups were configured to control access between the WordPress and MySQL instances.
 
-1. **Security Group for mysql-server**:
-   - Edited the inbound rules for the security group associated with mysql-server to allow MySQL traffic from mysql-client's private IP.
-   - Rule configuration:
-     ```
-     Type: MySQL/Aurora
-     Protocol: TCP
-     Port Range: 3306
-     Source: <mysql-client Private IP>/32
-     ```
+1. **MySQL Security Group**:
+   - Allowed traffic on port 3306 from the private IP of the WordPress instance for database communication.
 
-2. **mysql-client**: Ensured mysql-client had the necessary rules for SSH access.
+2. **WordPress Security Group**:
+   - Opened HTTP (port 80) for public access.
+   - Opened SSH (port 22) for administrative access.
 
-> **Insight:** Managing security at the AWS level adds an extra layer of control and allows more granular access management without modifying the server directly.
+## Installing Apache, PHP 8.3, and PHP Extensions on RHEL 9.4
 
-![Placeholder: AWS Security Group](images/aws-security-group-rules.png)
+### Step 1: Verify RHEL Version
 
-## Establishing Connection
-
-Once the security groups were configured, I connected the MySQL client from mysql-client to the MySQL server on mysql-server.
-
-1. From mysql-client, I used the following command to connect:
+Before starting, ensure you are running **RHEL 9.4**. This can be done with the following command:
 
 ```bash
-mysql -h <mysql-server Private IP> -u remote_user -p
+cat /etc/redhat-release
 ```
 
-2. Entered the password when prompted and successfully connected to the MySQL server running on mysql-server.
+Expected output:
+```
+Red Hat Enterprise Linux release 9.4 (Plow)
+```
 
-> **Personal Note:** This step marked the success of my setup. The correct security group configuration was key to getting this working properly.
+### Step 2: Install Apache (httpd)
 
-![Placeholder: MySQL Client Connected](images/mysql-client-connected.png)
+WordPress requires a web server to handle HTTP requests, and **Apache** is the most commonly used web server for WordPress installations. 
 
-## Network Diagnostics: Ping and Traceroute
+1. Install **Apache** using the `dnf` package manager:
+   ```bash
+   sudo dnf install httpd
+   ```
 
-### 1. Ping
+2. Start and enable Apache to ensure it runs on boot:
+   ```bash
+   sudo systemctl start httpd
+   sudo systemctl enable httpd
+   ```
 
-To test the network connectivity between the instances, I used the `ping` command:
+3. Check that Apache is running:
+   ```bash
+   sudo systemctl status httpd
+   ```
+
+
+### Step 3: Enable Necessary Repositories
+
+To install the latest PHP version, we need to enable additional repositories, which are not enabled by default on **RHEL 9**.
+
+#### Install the EPEL Repository
+
+**EPEL (Extra Packages for Enterprise Linux)** is a repository that contains additional software packages that are not provided in the default RHEL repository but are often needed for full functionality.
 
 ```bash
-ping <mysql-server Private IP>
+sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 ```
 
-### 2. Traceroute
+#### Install the Remi Repository
 
-For a detailed path analysis, I used `traceroute`:
+**Remi’s repository** is required to install **PHP 8.3**, as RHEL’s default repositories only provide PHP versions up to 8.2.
 
 ```bash
-traceroute <mysql-server Private IP>
+sudo dnf install https://rpms.remirepo.net/enterprise/remi-release-9.rpm
 ```
 
-> **Personal Note:** Both `ping` and `traceroute` were helpful in diagnosing any connectivity issues, ensuring that mysql-client could communicate with mysql-server over the internal network.
+### Step 4: Install PHP 8.3 and Extensions
 
-![Placeholder: Traceroute Results](images/ping-traceroute-results.png)
+1. enable the module stream for **PHP 8.3**:
+   ```bash
+   sudo dnf module switch-to php:remi-8.3
+   ```
+2. install the module stream for **PHP 8.3** with default extension:
+   ```bash
+   sudo dnf module install php:remi-8.3
+   ```
+
+3. Install **PHP 8.3** and the necessary extensions for WordPress:
+   ```bash
+   sudo dnf install php php-opcache php-gd php-curl php-mysqlnd php-xml php-json php-mbstring php-intl php-soap php-zip
+   ```
+
+#### Explanation of Key PHP Extensions:
+
+- **php-opcache**: Boosts performance by storing precompiled script bytecode in memory.
+- **php-gd**: Provides image manipulation capabilities (needed for image uploads and manipulation in WordPress).
+- **php-curl**: Allows external HTTP requests, used by WordPress to connect to other websites (e.g., for API calls).
+- **php-mysqlnd**: Native MySQL driver for connecting WordPress to the database.
+- **php-xml**: Handles XML parsing and writing.
+- **php-json**: Allows WordPress to handle JSON data (used heavily in REST APIs).
+- **php-mbstring**: Helps in handling multi-byte strings (essential for supporting various languages).
+- **php-intl**: Adds support for internationalization features.
+- **php-soap**: Adds SOAP protocol support.
+- **php-zip**: Required for managing ZIP files (used for plugin/theme uploads and updates).
+
+
+4. Start and enable **PHP-FPM**:
+   ```bash
+   sudo systemctl start php-fpm
+   sudo systemctl enable php-fpm
+   ```
+
+5. Restart Apache to apply the changes:
+   ```bash
+   sudo systemctl restart httpd
+   ```
+
+
+### Step 5: Configure SELinux (Security-Enhanced Linux)
+
+#### Why SELinux?
+
+**SELinux** is a security module that enforces strict access control policies on your system, especially important for enterprise environments like Red Hat. It helps limit the damage that could be caused by compromised services, including the web server and PHP. By default, **SELinux** is set to **enforcing** mode on **RHEL**. This mode restricts many actions that Apache and PHP-FPM might need to function correctly.
+
+#### Check SELinux Status
+
+Verify that SELinux is enabled and in **enforcing** mode:
+```bash
+sestatus
+```
+
+Expected output:
+```
+SELinux status:                 enabled
+Current mode:                   enforcing
+```
+
+#### Configure SELinux for PHP and Apache
+
+To allow **Apache** and **PHP-FPM** to run without issues, you need to allow specific actions that would otherwise be restricted by SELinux.
+
+1. Allow **Apache** to execute memory operations (needed by PHP’s OpCache):
+   ```bash
+   sudo setsebool -P httpd_execmem 1
+   ```
+
+2. Allow **Apache** to make network connections (required for external HTTP requests, for example, for connecting to APIs or downloading plugins/themes):
+   ```bash
+   sudo setsebool -P httpd_can_network_connect 1
+   ```
+
+
+### Step 6: Verify PHP Installation
+
+After installation, check that PHP 8.3 is correctly installed and running.
+
+1. Check the **PHP version**:
+   ```bash
+   php --version
+   ```
+
+   You should see output similar to:
+   ```
+   PHP 8.3.12 (cli) (built: Sep 26 2024 02:19:56) ( NTS )
+   ```
+
+2. List the installed **PHP modules**:
+   ```bash
+   php -m
+   ```
+
+   Ensure all necessary extensions for WordPress (like `curl`, `gd`, `mbstring`, etc.) are listed.
+
+
+### Step 7: Test PHP Functionality
+
+Create a **PHP info page** to verify that PHP is correctly served through Apache:
+
+1. Create a test PHP file:
+   ```bash
+   sudo nano /var/www/html/info.php
+   ```
+
+2. Add the following code:
+   ```php
+   <?php
+   phpinfo();
+   ?>
+   ```
+
+3. Access this file via your web browser:
+   ```bash
+   http://your-server-ip/info.php
+   ```
+
+   If everything is configured correctly, a page displaying detailed PHP information should appear. kindly delete the info.php once testing is done.
+
+
+## Wordpress Installation
+
+1. Install the wget package
+   ```bash
+   sudo dnf install wget
+   ```
+
+2. Download the latest version of **WordPress**:
+   ```bash
+   sudo wget https://wordpress.org/latest.tar.gz
+   ```
+
+3. Extract the WordPress archive:
+   ```bash
+   sudo tar -xzvf latest.tar.gz
+   ```
+
+4. Move WordPress folder to your **Apache web root**:
+   ```bash
+   sudo mv wordpress/ /var/www/html/
+   ```
+
+5. Set the correct permissions for the **Apache** user:
+   ```bash
+   sudo chown -R apache:apache /var/www/html/wordpress
+   sudo chmod -R 755 /var/www/html/wordpress
+   sudo chcon -t httpd_sys_rw_content_t  /var/www/html/wordpress -R
+   ```
+
+6. Restart Apache to apply the changes:
+   ```bash
+   sudo systemctl restart httpd
+   ```
+7. accessing `http://instance-public-ip/wordpress` from your browser to see the wordpress installation
+ 
 
 ## Final Steps and Reflections
 
-### Final Checklist
+At this point, the infrastructure was set up with WordPress and MySQL on separate EC2 instances, using EBS volumes managed by LVM for flexible storage. Next steps would involve completing the WordPress and MySQL configuration, but those details are beyond the scope of this guide.
 
-1. **Database Operations**: Once connected to the MySQL server, I was able to create databases, tables, and run queries without any issues.
-   
-    Example of a simple query to create a database:
-    ```sql
-    CREATE DATABASE my_database;
-    ```
-
-2. **Security**: I ensured that the security group rules were correctly configured and only allowed traffic between the two instances.
-
-![Placeholder: MySQL Database Creation](images/mysql-db-create.png)
-
-### Personal Reflections
-
-- This journey highlighted the importance of AWS security groups in managing instance connectivity. 
-- Understanding how MySQL works in a client-server architecture was a key takeaway.
-- Using AWS security groups instead of configuring the firewall directly on the instance felt more manageable and scalable, especially in cloud environments.
-
-### Challenges Faced
-
-- Initially, I had connectivity issues due to incorrect security group configurations, but careful adjustments resolved them.
-- Learning how to configure MySQL for remote access was crucial, and understanding the potential security risks helped me secure the setup properly.
-- The accidental root account lockout taught me the importance of following the correct sequence of steps during initial MySQL setup.
-
-## Additional Notes
-
-### Running MySQL Instances Across Different Regions or Cloud Providers
-
-While my setup was within the same AWS region, I learned that it's possible to run MySQL server and client on instances in different regions or even across different cloud environments. Here are some things to consider:
-
-1. **Latency**: Instances in different regions may experience higher latency. Choose regions close to each other to minimize this.
-
-2. **Networking**: 
-   - Ensure instances are correctly networked, possibly using VPN or VPC peering.
-   - For cross-cloud setups, look into services like AWS Direct Connect or equivalents.
-
-3. **Security**: 
-   - Be extra careful with firewall rules and security groups.
-   - Consider using SSL/TLS for encrypted connections.
-
-4. **Costs**: Be aware of potential data transfer costs between regions or cloud providers.
-
-> **Insight**: While cross-region or multi-cloud setups are viable, they require careful planning around networking, security, and costs. In production environments, consider replication strategies for better performance and availability.
-
-This journey taught me a lot about MySQL, AWS, and networking. I hope my experiences and insights help you in your own setup. Remember, patience and persistence are key when working with complex systems like these!
+### Reflections
+- **LVM**: Extremely helpful in dynamic storage management without needing to detach and re-attach EBS volumes.
+- **Instance Types**: Using at least t2.small EC2 instances prevented resource limitations during installations.
