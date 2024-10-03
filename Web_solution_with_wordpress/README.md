@@ -1,8 +1,5 @@
-# Setting Up Client-Server Architecture with WordPress and MySQL on AWS EC2: Infrastructure Setup
+# Project: Web Solution Implementation Using WordPress on AWS EC2
 
-This README documents the setup process for a client-server architecture using WordPress with MySQL on AWS EC2 instances. It covers infrastructure setup, including Logical Volume Manager (LVM) for managing storage.
-
-## Table of Contents
 
 ## Table of Contents
 
@@ -28,7 +25,11 @@ This README documents the setup process for a client-server architecture using W
 
 ## Introduction
 
-This guide details the steps I followed to set up an infrastructure for a WordPress web server and a MySQL database using AWS EC2 instances. The focus is on configuring storage dynamically using Logical Volume Manager (LVM) with Elastic Block Store (EBS) volumes.
+This project involves setting up **WordPress** on an **EC2** instance running **Red Hat Enterprise Linux (RHEL) 9.4** with 3 **EBS volumes** (each 10GB) attached to two separate instances: 
+- **web-server**: Responsible for running the WordPress application.
+- **db-server**: Running **MySQL** database.
+
+The web-server will be a **t2.small** instance type, while the db-server can be a **t2.micro** instance. 
 
 ## Prerequisites
 
@@ -36,20 +37,60 @@ Before starting, I ensured:
 - Two AWS EC2 instances (for WordPress and MySQL) running Red Hat Enterprise Linux 9.4.
 - Familiarity with basic AWS EC2 and LVM concepts.
 - SSH access to both instances.
-- Minimum instance size: t2.small (to avoid issues with package installations).
+- Minimum instance size: t2.small for the web-server instance (to avoid issues with package installations).
 
 ## Architecture Overview
 
-The architecture consists of:
-- **WordPress instance**: Hosting the application.
-- **MySQL instance**: Hosting the database.
-- **EBS storage**: Three volumes per instance, managed with LVM.
+**Web-Server Instance:**
+- **Instance Type**: t2.small
+- **3 EBS Volumes**: 10GB each (`/dev/xvdb`, `/dev/xvdc`, `/dev/xvdd`)
+
+**DB-Server Instance:**
+- **Instance Type**: t2.micro
+- **3 EBS Volumes**: 10GB each (`/dev/xvdb`, `/dev/xvdc`, `/dev/xvdd`)
+
+> Each server will use **Logical Volume Manager (LVM)** to dynamically manage the attached EBS volumes for application data and logs.
+> Make sure the EBS volume blocks are created in the same availability zone as the instance they will be attached to.
 
 ```mermaid
-graph LR
-    A[WordPress Instance<br>Application Server] -->|Connects to| B[MySQL Instance<br>Database Server]
-    C[AWS EBS Volumes for WordPress] --> A
-    D[AWS EBS Volumes for MySQL] --> B
+flowchart TB
+    subgraph AWS_Cloud
+        subgraph Web_Server["Web-Server Instance (t2.small)"]
+            W[WordPress Application]
+            EBS1["10GB EBS Volume /dev/xvdb"]
+            EBS2["10GB EBS Volume /dev/xvdc"]
+            EBS3["10GB EBS Volume /dev/xvdd"]
+            LVM1["LVM - webdata-vg"]
+            
+            EBS1 --> LVM1
+            EBS2 --> LVM1
+            EBS3 --> LVM1
+            
+            LVM1 --> app_lv["14GB LV (app-lv) -> /var/www/html"]
+            LVM1 --> log_lv1["14GB LV (log-lv) -> /var/log"]
+            
+            W --> app_lv
+        end
+        
+        subgraph DB_Server["DB-Server Instance (t2.micro)"]
+            M[MySQL Database]
+            EBS4["10GB EBS Volume /dev/xvdb"]
+            EBS5["10GB EBS Volume /dev/xvdc"]
+            EBS6["10GB EBS Volume /dev/xvdd"]
+            LVM2["LVM - dbdata-vg"]
+            
+            EBS4 --> LVM2
+            EBS5 --> LVM2
+            EBS6 --> LVM2
+            
+            LVM2 --> db_lv["14GB LV (db-lv) -> /db"]
+            LVM2 --> log_lv2["14GB LV (log-lv) -> /var/log"]
+            
+            M --> db_lv
+        end
+        
+        W --> M
+    end
 ```
 
 > **Insight:** Using LVM allows dynamic scaling and better management of storage volumes without downtime.
@@ -185,6 +226,8 @@ WordPress requires a web server to handle HTTP requests, and **Apache** is the m
 ### Step 3: Enable Necessary Repositories
 
 To install the latest PHP version, we need to enable additional repositories, which are not enabled by default on **RHEL 9**.
+
+> you can see detailed decommentation from [Remi's site](https://rpms.remirepo.net/wizard/)
 
 #### Install the EPEL Repository
 
