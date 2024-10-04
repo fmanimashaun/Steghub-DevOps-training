@@ -1,1 +1,1 @@
-https://github.com/fmanimashaun/Steghub-DevOps-training/tree/main/Client-Server_implementation
+https://github.com/fmanimashaun/Steghub-DevOps-training/blob/main/Web_solution_with_wordpress/README.md
