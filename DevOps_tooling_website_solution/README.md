@@ -11,6 +11,7 @@
 5. [Configuring NFS Server](#configuring-nfs-server)
    - [EBS Setup](#ebs-setup)
    - [LVM Configuration](#lvm-configuration)
+   - [Install and Configure NFS server](#install-and-configure-nfs-server)
 6. [Configuring Database Server](#configuring-database-server)
    - [EBS Setup](#ebs-setup-1)
    - [LVM Configuration](#lvm-configuration-1)
@@ -206,7 +207,7 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    ```
    The new volumes appeared as `/dev/xvdb`, `/dev/xvdc`, and `/dev/xvdd`.
 
-   ![Showing EBS volumes attached](images/dev-blocks.png)
+   ![Showing EBS volumes attached](images/dev-blocks-1.png)
 
    > note down the name of the EBB volumes as shown on the output of the **lsblk** command
 
@@ -239,7 +240,7 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    - **p** - Print partition table informatoon
    - **w** - Write changes to disk
 
-   ![Partitioning outcome](images/partitioning.png)
+   ![Partitioning outcome](images/partitioning-1.png)
 
    You do the same for the remaining EBS blocks using the commands below:
    - xvdc block:
@@ -256,7 +257,7 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    ```bash
    lsblk
    ```
-![Partition confirmation](images/confirmation%20of%20partitions.png)
+![Partition confirmation](images/confirmation%20of%20partitions-1.png)
 
 > note down the partition names: **xvdb1**, **xvdc1** and **xvdd1**
 
@@ -284,7 +285,7 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    lsblk
    ```
 
-   ![Output of the LV creation](images/Logical-volumes.png)
+   ![Output of the LV creation](images/Logical-volumes-1.png)
 
    To verify the entire setup - view the VG, PV and LV, you can run:
    ```bash
@@ -300,7 +301,7 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    sudo mkfs -t xfs /dev/webdata-vg/lv-opt
    ```
 
-   ![File system creation](images/File-system-creation.png)
+   ![File system creation](images/File-system-creation-1.png)
 
    - Create the following mount points:
 
@@ -308,7 +309,10 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    sudo mkdir /mnt/apps /mnt/logs /mnt/opt
    ```
 
-   - Install the NFS server:
+### Install and Configure NFS server
+
+1. Install NFS server:
+
    ```bash
    sudo dnf update -y
    sudo dnf install nfs-utils -y
@@ -317,7 +321,8 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    sudo systemctl status nfs-server
    ```
 
-   - Set permission to the mount points:
+2. Set permission to the mount points:
+
    ```bash
    sudo chown -R nobody: /mnt/apps
    sudo chown -R nobody: /mnt/logs
@@ -332,7 +337,7 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
 
    ![NFS server subnet CIDR](images/nfs-subnet-cidr.png)
 
-   - Configure access to NFS for clients within same subnet (172.31.0.0/20)
+3. Configure access to NFS for clients within same subnet (172.31.0.0/20)
    ```bash
    sudo nano /etc/exports
    ```
@@ -350,7 +355,7 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    ![NFS server export mount points](images/exports-mount-points.png)
 
 
-   - Check the NFS server port:
+4. Check the NFS server port:
    ```bash
    rpcinfo -p | grep nfs
    ```
@@ -361,3 +366,256 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
       - UDP 2049
    ![NFS server ports](images/nfs-ports.png)
    ![nfs-server security group](images/nfs-sg-config.png)
+
+## Configuring Database Server
+
+Connect to the db-server instance via the ssh terminal to have access to the system.
+
+### EBS Setup
+
+1. **Check Volume Visibility**:
+   After SSH'ing into the instances, I listed the attached block devices using:
+
+   ```bash
+   lsblk
+   ```
+   The new volumes appeared as `/dev/xvdb`, `/dev/xvdc`, and `/dev/xvdd`.
+
+   ![Showing EBS volumes attached](images/dev-blocks-2.png)
+
+   > note down the name of the EBB volumes as shown on the output of the **lsblk** command
+
+### LVM Configuration
+
+1. **Install LVM Tools**:
+   Since Red Hat Enterprise Linux 9.4 was being used, I ensured LVM was installed, I also installed nano (text editor) and wget (for downloading)
+
+   ```bash
+   sudo dnf update
+   sudo dnf install lvm2 nano
+   ```
+
+   you can check for available partition using **lvmdiskscan** command, however, since it is a fresh EBS volumes, there is no partition on it at the moment.
+
+2. **Create partitions on EBS volumes**:
+
+   Using the **gdisk** utitlity to create a single partition on each EBS block as follows:
+
+   ```bash
+   sudo gdisk /dev/xvdb
+   ```
+
+   This will launch the partition utility interface as shown below:
+
+   ![Partition utility interface](images/partition-interface.png)
+
+   use the following commands to create and save the partition table to disk:
+   - **n** - To create a partition table, accept all defaults by pressing **Enter** key
+   - **p** - Print partition table informatoon
+   - **w** - Write changes to disk
+
+   ![Partitioning outcome](images/partitioning-2.png)
+
+   You do the same for the remaining EBS blocks using the commands below:
+   - xvdc block:
+   ```bash
+   sudo gdisk /dev/xvdc
+   ```
+
+    - xvdd block:
+   ```bash
+   sudo gdisk /dev/xvdd
+   ```
+
+   confirm the partitions using **lsblk**
+   ```bash
+   lsblk
+   ```
+![Partition confirmation](images/confirmation%20of%20partitions-2.png)
+
+> note down the partition names: **xvdb1**, **xvdc1** and **xvdd1**
+
+3. **Create Physical Volumes**:
+   Converted the three attached EBS block partitions into physical volumes (PVs):
+
+   ```bash
+   sudo pvcreate /dev/xvdb1 /dev/xvdc1 /dev/xvdd1
+   ```
+
+4. **Create Volume Group**:
+   Next, Created a volume group (VG) to aggregate the PVs:
+
+   ```bash
+   sudo vgcreate dbdata-vg /dev/xvdb1 /dev/xvdc1 /dev/xvdd1
+   ```
+
+5. **Create Logical Volumes**:
+   Created logical volumes (LVs) for storing WordPress application data and logs. Here's how I did it:
+
+   ```bash
+   sudo lvcreate -n db-lv -L 14G  dbdata-vg
+   sudo lvcreate -n log-lv -L 14G  dbdata-vg
+   lsblk
+   ```
+
+   ![Output of the LV creation](images/Logical-volumes-2.png)
+
+   To verify the entire setup - view the VG, PV and LV, you can run:
+   ```bash
+   sudo vgdisplay -v
+   ```
+
+6. **Create File system and Mount LVs**:
+   Create o a file system on the Logival volumes by running the follwoing commands:
+
+   ```bash
+   sudo mkfs -t ext4 /dev/dbdata-vg/db-lv
+   sudo mkfs -t ext4 /dev/dbdata-vg/log-lv
+   ```
+
+   ![File system creation](images/File-system-creation-2.png)
+
+   Then mounted them:
+
+   - Create the following locations:
+
+   ```bash
+   sudo mkdir -p /db /home/recovery/logs
+   ```
+
+   > note the **-p** is to ensure the parent directory are created if not existing.
+
+   > The **/home/recovery/logs** directory is to backup the **/var/log** directory before mounting the **/dev/dbdata-vg/log-lv** to the location as the mount process will wipe the location clean.
+
+   - Backup the **/var/log**:
+   ```bash
+   sudo rsync -av /var/log/ /home/recovery/logs/
+   ```
+   >The -av flag in the rsync command has the following meanings:
+   >
+   > - a (archive): This option enables archive mode, which ensures that the data is copied recursively and preserves symbolic links, file permissions, timestamps, and ownership. It's a commonly used option when making backups or transfers where you want to keep the file attributes intact.
+   >
+   > - v (verbose): This option enables verbose mode, meaning that rsync will display detailed information about what files are being transferred during the operation. It helps to see the progress and details of the copy process.
+
+   - Mount the LVs:
+
+   ```bash
+   sudo mount /dev/dbdata-vg/db-lv /db
+   sudo mount /dev/dbdata-vg/log-lv /var/log
+   ```
+
+   - Restore the **/var/log**:
+   ```bash
+   sudo rsync -av /home/recovery/logs/ /var/log/ 
+   ```
+
+7. **Persistent Mounts**:
+   To ensure the volumes are automatically mounted at boot, updated `/etc/fstab`:
+
+   - Get the UUID of the LVs:
+      ```bash
+      sudo blkid
+      ```
+
+   ![EBS LV ID](images/lv-uuid.png)
+
+   - Update the `/etc/fstab`:
+   ```bash
+   sudo nano /etc/fstab
+   ```
+
+   - Paste the code below:
+   ```yml
+   # mounts for wordpress webserver
+   UUID=ac925709-a000-4cb5-926d-bc9c792c499c /db ext4 defaults 0 0
+   UUID=44d455e2-38ff-414e-839e-39110887379d /var/log ext4 defaults 0 0
+   ```
+
+   - Save and reload the daemon:
+   ```bash
+   sudo systemctl daemon-reload
+   ```
+
+   - Test the mount:
+   ```bash
+   sudo mount -a # if no output, the mount is successfully added to the fstab
+   ```
+
+### AWS Security Group Configuration
+
+Security groups were configured to control access between the WordPress and MySQL instances.
+
+1. **MySQL Security Group**:
+   - Allowed traffic on port 3306 from the subnet CIDR block (172.31.0.0/20) for database communication.
+![MySQL AWS security group](images/mysql-sg-config.png)
+   - Opened SSH (port 22) for administrative access.
+
+### Install and Configure MYSQL Database server
+While still inside the **db-server**, let setup the mysql database:
+
+```bash
+sudo dnf update
+sudo dnf install mysql-server -y
+```
+
+### Initial Configuration
+
+2. Started and enabled the MySQL service:
+
+```bash
+sudo systemctl start mysqld
+sudo systemctl enable mysqld
+```
+
+3. Set the root password:
+
+```bash
+sudo mysql
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Password.1';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+4. Ran the secure installation script:
+
+```bash
+sudo mysql_secure_installation
+```
+
+> **Personal Note:** I initially ran the `mysql_secure_installation` script without setting the root password first. This locked me out of the root account, leading to a valuable lesson on the importance of following the correct sequence of steps.
+
+5. Verified the installation:
+
+```bash
+sudo systemctl status mysqld
+```
+
+6. Create admin user for the wordpress application:
+```bash
+sudo mysql -u root -p
+```
+
+```bash
+CREATE DATABASE tooling;
+CREATE USER 'webaccess'@'172.31.%' IDENTIFIED WITH mysql_native_password BY 'Password.1';
+GRANT ALL PRIVILEGES ON tooling.* TO 'webaccess'@'172.31.%';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+7. Test the remote connection to the newly created database via **web-server** instance:
+   Connect to the web-server instance via the ssh interface and run this command:
+
+   - Install the MySQL client:
+   ```bash
+   sudo dnf update
+   sudo dnf install mysql
+   ```
+   - Connect to the remote mysql server:
+   ```bash
+   sudo mysql -h 172.31.3.89 -u webaccess -p
+   ```
+
+   if you can connect into the mysql shell, then the setup was successful.
+
+![Remote MySQL connection](images/remote-mysql-connection.png)
