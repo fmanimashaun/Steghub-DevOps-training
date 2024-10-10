@@ -15,14 +15,14 @@
 6. [Configuring Database Server](#configuring-database-server)
    - [EBS Setup](#ebs-setup-1)
    - [LVM Configuration](#lvm-configuration-1)
-7. [AWS Security Group Configuration](#aws-security-group-configuration)
-8. [Install and Configure MySQL Database Server](#install-and-configure-mysql-database-server)
-9. [Configuring Web Servers](#configuring-web-servers)
+   - [AWS Security Group Configuration](#aws-security-group-configuration)
+   - [Install and Configure MySQL Database Server](#install-and-configure-mysql-database-server)
+7. [Configuring Web Servers](#configuring-web-servers)
    - [Installing NFS Client](#installing-nfs-client)
    - [Mounting NFS Shares](#mounting-nfs-shares)
-   - [Installing Apache and PHP](#installing-apache-and-php)
-10. [Deploying Tooling Website](#deploying-tooling-website)
-11. [Final Steps and Reflections](#final-steps-and-reflections)
+   - [Installing PHP and extensions](#installing-php-and-extensions)
+8. [Deploying Tooling Website](#deploying-tooling-website)
+9. [Final Steps and Reflections](#final-steps-and-reflections)
 
 ## Introduction
 
@@ -609,7 +609,7 @@ EXIT;
    - Install the MySQL client:
    ```bash
    sudo dnf update
-   sudo dnf install mysql
+   sudo dnf install mysql nano
    ```
    - Connect to the remote mysql server:
    ```bash
@@ -619,3 +619,301 @@ EXIT;
    if you can connect into the mysql shell, then the setup was successful.
 
 ![Remote MySQL connection](images/remote-mysql-connection.png)
+
+## Configuring Web Servers
+We will be configuring the three web servers for nfs server connection and installing both apache and php on them.
+
+### Installing NFS Client
+
+1. Install the nfs-client and apache on all the three webservers:
+
+```bash
+sudo dnf install nfs-utils nfs4-acl-tools -y
+```
+
+2. Install Apache (httpd)
+
+Our applicaiton requires a web server to handle HTTP requests, and **Apache** is the most commonly used web server for WordPress installations. 
+
+1. Install **Apache** using the `dnf` package manager:
+   ```bash
+   sudo dnf install httpd git
+   ```
+
+2. Start and enable Apache to ensure it runs on boot:
+   ```bash
+   sudo systemctl start httpd
+   sudo systemctl enable httpd
+   ```
+
+3. Check that Apache is running:
+   ```bash
+   sudo systemctl status httpd
+   ```
+3. Access the web browser:
+   `http://your-server-ip`
+
+   If everything is configured correctly, you should see the default redhat page.
+
+![Default redhat page](images/default-redhat-page.png)
+
+### Mounting NFS Shares
+
+1. Mount **/var/www/** and target the NFS server:
+
+```bash
+sudo mount -t nfs -o rw,nosuid 172.31.1.101:/mnt/apps /var/www
+```
+2. Verify the NFS is mount successfully with the command below:
+```bash
+df -h
+```
+
+3. Persistent Mounts: To ensure the volumes are automatically mounted at boot, updated /etc/fstab:
+
+```bash
+sudo nano /etc/fstab
+```
+Paste the code below:
+
+```yml
+# nfs mount location 
+172.31.1.101:/mnt/apps /var/www nfs defaults 0 0
+```
+
+```bash
+sudo systemctl daemon-reload
+
+sudo mount -a
+```
+### Installing PHP and extensions
+
+1. Verify RHEL Version
+
+Before starting, ensure you are running **RHEL 9.4**. This can be done with the following command:
+
+```bash
+cat /etc/redhat-release
+```
+
+Expected output:
+```
+Red Hat Enterprise Linux release 9.4 (Plow)
+```
+
+
+
+Enable Necessary Repositories
+
+To install the latest PHP version, we need to enable additional repositories, which are not enabled by default on **RHEL 9**.
+
+> you can see detailed decommentation from [Remi's site](https://rpms.remirepo.net/wizard/)
+
+![Remi webiste](images/remi-repo-wizard.png)
+
+#### Install the EPEL Repository
+
+**EPEL (Extra Packages for Enterprise Linux)** is a repository that contains additional software packages that are not provided in the default RHEL repository but are often needed for full functionality.
+
+```bash
+sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+```
+
+#### Install the Remi Repository
+
+**Remi’s repository** is required to install **PHP 8.3**, as RHEL’s default repositories only provide PHP versions up to 8.2.
+
+```bash
+sudo dnf install https://rpms.remirepo.net/enterprise/remi-release-9.rpm
+```
+
+### Step 4: Install PHP 8.3 and Extensions
+
+1. enable the module stream for **PHP 8.3**:
+   ```bash
+   sudo dnf module switch-to php:remi-8.3
+   ```
+2. install the module stream for **PHP 8.3** with default extension:
+   ```bash
+   sudo dnf module install php:remi-8.3
+   ```
+
+3. Install **PHP 8.3** and the necessary extensions for php-based application:
+   ```bash
+   sudo dnf install php php-opcache php-gd php-curl php-mysqlnd php-xml php-json php-mbstring php-intl php-soap php-zip
+   ```
+
+#### Explanation of Key PHP Extensions:
+
+- **php-opcache**: Boosts performance by storing precompiled script bytecode in memory.
+- **php-gd**: Provides image manipulation capabilities (needed for image uploads and manipulation in WordPress).
+- **php-curl**: Allows external HTTP requests, used by WordPress to connect to other websites (e.g., for API calls).
+- **php-mysqlnd**: Native MySQL driver for connecting WordPress to the database.
+- **php-xml**: Handles XML parsing and writing.
+- **php-json**: Allows WordPress to handle JSON data (used heavily in REST APIs).
+- **php-mbstring**: Helps in handling multi-byte strings (essential for supporting various languages).
+- **php-intl**: Adds support for internationalization features.
+- **php-soap**: Adds SOAP protocol support.
+- **php-zip**: Required for managing ZIP files (used for plugin/theme uploads and updates).
+
+
+4. Start and enable **PHP-FPM**:
+   ```bash
+   sudo systemctl start php-fpm
+   sudo systemctl enable php-fpm
+   ```
+
+5. Restart Apache to apply the changes:
+   ```bash
+   sudo systemctl restart httpd
+   ```
+
+
+6.  Configure SELinux (Security-Enhanced Linux)
+
+> **SELinux** is a security module that enforces strict access control policies on your system, especially important for enterprise environments like Red Hat. It helps limit the damage that could be caused by compromised services, including the web server and PHP. By default, **SELinux** is set to **enforcing** mode on **RHEL**. This mode restricts many actions that Apache and PHP-FPM might need to function correctly.
+
+- Check SELinux Status
+
+Verify that SELinux is enabled and in **enforcing** mode:
+```bash
+sestatus
+```
+
+Expected output:
+```
+SELinux status:                 enabled
+Current mode:                   enforcing
+```
+
+- Configure SELinux for PHP and Apache
+
+To allow **Apache** and **PHP-FPM** to run without issues, you need to allow specific actions that would otherwise be restricted by SELinux.
+
+1. Allow **Apache** to execute memory operations (needed by PHP’s OpCache):
+   ```bash
+   sudo setsebool -P httpd_execmem 1
+   ```
+
+2. Allow **Apache** to make network connections (required for external HTTP requests, for example, for connecting to APIs or downloading plugins/themes):
+   ```bash
+   sudo setsebool -P httpd_can_network_connect 1
+   ```
+
+3. Allow **Apache** to connect via a NFS server:
+
+```bash
+sudo setsebool -P httpd_use_nfs on
+```
+
+
+4. Verify the Change: After enabling the boolean, you can verify that it is set correctly:
+
+```bash
+getsebool httpd_use_nfs
+getsebool httpd_execmem
+getsebool httpd_can_network_connect
+```
+
+> You should see: **httpd_use_nfs --> on**, **httpd_execmem --> on** and **httpd_can_network_connect --> on**
+
+> The -P flag makes the change persistent across reboots.
+
+7. Verify PHP Installation
+
+After installation, check that PHP 8.3 is correctly installed and running.
+
+- Check the **PHP version**:
+
+   ```bash
+   php --version
+   ```
+
+   You should see output similar to:
+   ```
+   PHP 8.3.12 (cli) (built: Sep 26 2024 02:19:56) ( NTS )
+   ```
+
+- List the installed **PHP modules**:
+   ```bash
+   php -m
+   ```
+
+   Ensure all necessary extensions for WordPress (like `curl`, `gd`, `mbstring`, etc.) are listed, see recommended list from [Wordpress](https://make.wordpress.org/hosting/handbook/server-environment/).
+
+
+8. Test PHP Functionality
+
+Create a **PHP info page** to verify that PHP is correctly served through Apache:
+
+- Create a test PHP file:
+   ```bash
+   sudo nano /var/www/html/info.php
+   ```
+
+- Add the following code:
+   ```php
+   <?php
+   phpinfo();
+   ?>
+   ```
+
+- Access this file via your web browser:
+   `http://your-server-ip/info.php`
+
+   If everything is configured correctly, a page displaying detailed PHP information should appear. kindly delete the info.php once testing is done.
+
+![PHP info page](images/phpinfo.png)
+
+
+9. Application deployment
+
+- clone the PHP-based application from github
+
+```bash
+sudo git clone https://github.com/fmanimashaun/tooling.git
+```
+
+- import database:
+
+```bash
+cd tooling
+sudo mysql -h 172.31.3.89 -u webaccess -p tooling < tooling-db.sql 
+```
+
+- Add a new admin user called myuser into the tooling database:
+
+```bash
+sudo mysql -h 172.31.3.89 -u webaccess -p tooling
+```
+
+```sql
+INSERT INTO `users` (`username`, `password`, `email`, `user_type`, `status`) 
+VALUES ('myuser', '5f4dcc3b5aa765d61d8327deb882cf99', 'user@mail.com', 'admin', '1');
+```
+
+- update the database connection info in the function.php file
+
+```bash
+sudo nano /var/www/html/function.php
+```
+
+```php
+$db = mysqli_connect('172.31.3.89', 'webaccess', 'Password.1', 'tooling');
+```
+
+
+- Restart Apache: Once you’ve made the change, restart the Apache service to apply the new settings:
+
+```bash
+sudo systemctl restart httpd
+```
+
+- Visit the browser to view the application:
+```
+http://<public ip of any of the web servers>/index.php
+```
+> login using username: **myuser** and password: **password**
+
+![final output - login page](images/login.png)
+![final output - dashboard page](images/dashboard.png)
