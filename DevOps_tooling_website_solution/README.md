@@ -932,6 +932,10 @@ INSERT INTO `users` (`username`, `password`, `email`, `user_type`, `status`)
 VALUES ('myuser', '5f4dcc3b5aa765d61d8327deb882cf99', 'user@mail.com', 'admin', '1');
 ```
 
+> With this, you can login into the application as an admin user using:
+> **username:** myuser
+> **password:** password
+
 - update the database connection info in the function.php file
 
 ```bash
