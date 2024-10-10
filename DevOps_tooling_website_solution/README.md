@@ -301,6 +301,8 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    sudo mkfs -t xfs /dev/webdata-vg/lv-opt
    ```
 
+   > For an NFS server, XFS is typically chosen over EXT4 because of its better performance in handling large files, scalability, efficient metadata management, support for concurrent I/O operations, and reliability under heavy loads. These characteristics make XFS the superior choice for systems like NFS servers that need to manage large volumes of data and serve multiple clients simultaneously.
+
    ![File system creation](images/File-system-creation-1.png)
 
    - Create the following mount points:
@@ -343,15 +345,32 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    ```
 
       paste the code below into the exports file:
+
       ```yml
       # exporting the nfs mount points: 
       /mnt/apps 172.31.0.0/20(rw,sync,no_all_squash,no_root_squash)
       /mnt/logs 172.31.0.0/20(rw,sync,no_all_squash,no_root_squash)
       /mnt/opt 172.31.0.0/20(rw,sync,no_all_squash,no_root_squash)
       ```
+
+      > **(rw,sync,no_all_squash,no_root_squash)**: These are options that define the behavior of the NFS export. Each option is separated by a comma:
+      >- **rw**: This means the exported directory is read-write. Clients can both read from and write to the directory.
+      >- **sync**: This option ensures that all changes to the exported directory are written to disk before the server responds to the client. It provides data integrity but may reduce performance.
+      >- **no_all_squash**: This option disables the squashing of user IDs. Normally, NFS would map all remote user IDs to the nobody user to prevent unauthorized access. With no_all_squash, remote users retain their original IDs, allowing them to maintain their permissions.
+      >- **no_root_squash**: This option allows the root user on the client to have root access to the NFS share. Without this option, the root user would be mapped to the nobody user, which has limited permissions.
+
+
    ```bash
    sudo exportfs -arv
    ```
+
+
+   >The command sudo exportfs -arv is used to manage NFS (Network File System) exports on a Linux system. Here's what each part of the command does:
+   >- exportfs: This is the command used to maintain the list of currently exported NFS file systems. It controls how and what directories are shared with NFS clients.
+   >- **a**: This flag means "all." It tells exportfs to apply the operation to all directories listed in the /etc/exports file (the configuration file for NFS exports).
+   >- **r**: This stands for "re-export." It refreshes the NFS export list. Any changes in the /etc/exports file (e.g., added or removed directories) are applied without having to restart the NFS server.
+   >- **v**: This stands for "verbose." It provides detailed output, showing what the command is doing as it runs, which can be useful for debugging or confirming actions.
+
    ![NFS server export mount points](images/exports-mount-points.png)
 
 
@@ -359,6 +378,13 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    ```bash
    rpcinfo -p | grep nfs
    ```
+
+   > Here's a breakdown of the command:
+   >- **rpcinfo**: This command displays information about programs registered with the RPC service on a machine, including NFS. RPC is used by NFS for communication between servers and clients.
+   >- **p**: This option tells rpcinfo to list all the registered RPC services on the local machine (i.e., the programs and their associated ports).
+   >- **|**: The pipe operator takes the output of rpcinfo -p and passes it as input to the grep command.
+   >- **grep nfs**: This filters the output of rpcinfo -p to only show lines containing the word "nfs", which represent NFS-related services.
+
    Add the following ports to the security group for the nfs-server on aws console:
       - TCP 111
       - TCP 2049
@@ -631,7 +657,7 @@ We will be configuring the three web servers for nfs server connection and insta
 sudo dnf install nfs-utils nfs4-acl-tools -y
 ```
 
-2. Install Apache (httpd)
+2. Install Apache (httpd) and git:
 
 Our applicaiton requires a web server to handle HTTP requests, and **Apache** is the most commonly used web server for WordPress installations. 
 
@@ -639,6 +665,7 @@ Our applicaiton requires a web server to handle HTTP requests, and **Apache** is
    ```bash
    sudo dnf install httpd git
    ```
+>NB: **git** is needed to clone the github repo on the local machine (web servers)
 
 2. Start and enable Apache to ensure it runs on boot:
    ```bash
@@ -664,6 +691,19 @@ Our applicaiton requires a web server to handle HTTP requests, and **Apache** is
 ```bash
 sudo mount -t nfs -o rw,nosuid 172.31.1.101:/mnt/apps /var/www
 ```
+
+> The command **sudo mount -t nfs -o rw,nosuid 172.31.1.101:/mnt/apps /var/www** is used to mount a remote NFS (Network File System) directory on your local system. Let's break it down:
+> - **mount:** The command to mount a file system.
+>- **t nfs:** Specifies the type of file system to mount, which in this case is NFS.
+>- **o rw,nosuid:** These are options passed to the mount command:
+>     - **rw:** Mounts the file system with read-write access.
+>     - **nosuid:** Prevents the execution of "set-user-identifier" or "set-group-identifier" (suid/sgid) programs from the mounted file system. This increases security by preventing potential privilege escalation from the remote system.
+>- **172.31.1.101:/mnt/apps**: The NFS server and exported directory.
+>     - **72.31.1.101**: is the IP address of the NFS server.
+>     - **/mnt/apps**: is the directory being shared by the NFS server that you're mounting.
+>     - **/var/www**: The local directory where the NFS share will be mounted. After the command is run, the contents of the remote /mnt/apps directory will be accessible locally under /var/www.
+
+
 2. Verify the NFS is mount successfully with the command below:
 ```bash
 df -h
@@ -866,7 +906,7 @@ Create a **PHP info page** to verify that PHP is correctly served through Apache
 ![PHP info page](images/phpinfo.png)
 
 
-9. Application deployment
+## Deploying Tooling Website
 
 - clone the PHP-based application from github
 
@@ -917,3 +957,7 @@ http://<public ip of any of the web servers>/index.php
 
 ![final output - login page](images/login.png)
 ![final output - dashboard page](images/dashboard.png)
+
+## Final Steps and Reflections
+
+I ran into some connection issues at first but i was able to make the whole setup work without needing to disable selinux as i feel it is a security layer that needed to be maintained
