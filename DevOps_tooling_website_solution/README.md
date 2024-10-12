@@ -193,7 +193,7 @@ Follow these steps to set up the required EC2 instances:
 ![AWS instances](images/aws-instances.png)
 ![AWS EBS volumes](images/aws-ebs-volumes.png)
 
-## Configuring NFS Serve
+## Configuring NFS Server
 
 Connect to the nfs-server instance via the ssh terminal to have access to the system.
 
@@ -552,7 +552,7 @@ Connect to the db-server instance via the ssh terminal to have access to the sys
 
    - Paste the code below:
    ```yml
-   # mounts for wordpress webserver
+   # mounts for db server
    UUID=ac925709-a000-4cb5-926d-bc9c792c499c /db ext4 defaults 0 0
    UUID=44d455e2-38ff-414e-839e-39110887379d /var/log ext4 defaults 0 0
    ```
