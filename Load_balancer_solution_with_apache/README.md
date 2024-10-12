@@ -196,6 +196,11 @@ This study has given me a solid foundation in understanding how load balancers c
    sudo apt install libxml2-dev -y
    ```
 
+   ```bash
+   sudo systemctl start apache2
+   sudo systemctl enable apache2
+   ```
+
 4. Enable necessary modules:
 
    ```
@@ -230,9 +235,9 @@ This study has given me a solid foundation in understanding how load balancers c
 
    ```
    <Proxy "balancer://mycluster">
-       BalancerMember http://<WebServer1-Private-IP-Address>:80 loadfactor=5 timeout=1
-       BalancerMember http://<WebServer2-Private-IP-Address>:80 loadfactor=5 timeout=1
-       BalancerMember http://<WebServer3-Private-IP-Address>:80 loadfactor=5 timeout=1
+       BalancerMember http://172.31.2.177:80 loadfactor=5 timeout=1
+       BalancerMember http://172.31.2.114:80 loadfactor=5 timeout=1
+       BalancerMember http://172.31.5.137:80 loadfactor=5 timeout=1
        ProxySet lbmethod=bytraffic
        # ProxySet lbmethod=byrequests
    </Proxy>
@@ -242,7 +247,7 @@ This study has given me a solid foundation in understanding how load balancers c
    ProxyPassReverse / balancer://mycluster/
    ```
 
-3. Replace `<WebServer1-Private-IP-Address>`, `<WebServer2-Private-IP-Address>`, and `<WebServer3-Private-IP-Address>` with the actual private IP addresses of your web servers.
+3. Replace `172.31.2.177`, `172.31.2.114`, and `172.31.5.137` with the actual private IP addresses of your web servers.
 
 >**Load Balancing Methods**
 Apache provides several load balancing methods. The method is specified by the lbmethod parameter in the ProxySet directive. Here's a summary of available methods:
