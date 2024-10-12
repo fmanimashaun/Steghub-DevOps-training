@@ -927,9 +927,11 @@ sudo mysql -h 172.31.3.89 -u webaccess -p tooling
 ```
 
 ```sql
-INSERT INTO `users` (`username`, `password`, `email`, `user_type`, `status`) 
-VALUES ('myuser', '5f4dcc3b5aa765d61d8327deb882cf99', 'user@mail.com', 'admin', '1');
+INSERT INTO `users` (`username`, `password`, `email`, `user_type`, `status`)
+VALUES ('myuser', MD5('password'), 'user@mail.com', 'admin', '1');
 ```
+
+>NB: we use the **MD5** hashing method based what was used in the tooling code
 
 > With this, you can login into the application as an admin user using:
 > **username:** myuser
