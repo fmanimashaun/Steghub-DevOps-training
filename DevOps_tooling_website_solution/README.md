@@ -353,6 +353,8 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
       /mnt/opt 172.31.0.0/20(rw,sync,no_all_squash,no_root_squash)
       ```
 
+>Replace **172.31.0.0/20** with the subnet CIDR block of the nfs-server.
+
       > **(rw,sync,no_all_squash,no_root_squash)**: These are options that define the behavior of the NFS export. Each option is separated by a comma:
       >- **rw**: This means the exported directory is read-write. Clients can both read from and write to the directory.
       >- **sync**: This option ensures that all changes to the exported directory are written to disk before the server responds to the client. It provides data integrity but may reduce performance.

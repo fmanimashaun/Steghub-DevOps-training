@@ -174,6 +174,10 @@ This study has given me a solid foundation in understanding how load balancers c
    - Type: SSH, Source: Your IP
 4. Save rules
 
+![AWS instances](images/instances.png)
+![AWS EBS volumes](images/ebs.png)
+![aws security groups](images/security-group.png)
+
 ### Step 3: Install Apache and Configure as a Load Balancer
 
 1. Connect to your EC2 instance via SSH:
@@ -230,24 +234,58 @@ This study has given me a solid foundation in understanding how load balancers c
    ```
    sudo nano /etc/apache2/sites-available/000-default.conf
    ```
-
-2. Add the following configuration just before the closing `</VirtualHost>` tag:
+Update the `</VirtualHost>` tag as follows:
 
    ```
-   <Proxy "balancer://mycluster">
-       BalancerMember http://172.31.2.177:80 loadfactor=5 timeout=1
-       BalancerMember http://172.31.2.114:80 loadfactor=5 timeout=1
-       BalancerMember http://172.31.5.137:80 loadfactor=5 timeout=1
-       ProxySet lbmethod=bytraffic
-       # ProxySet lbmethod=byrequests
-   </Proxy>
+  <VirtualHost *:80>
+        # The ServerName directive sets the request scheme, hostname, and port that
+        # the server uses to identify itself. This is used when creating
+        # redirection URLs. In the context of virtual hosts, the ServerName
+        # specifies what hostname must appear in the request's Host: header to
+        # match this virtual host. For the default virtual host (this file), this
+        # value is not decisive as it is used as a last resort host regardless.
+        # However, you must set it for any further virtual host explicitly.
+        #ServerName www.example.com
 
-   ProxyPreserveHost On
-   ProxyPass / balancer://mycluster/
-   ProxyPassReverse / balancer://mycluster/
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html
+
+        # Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
+        # error, crit, alert, emerg.
+        # It is also possible to configure the loglevel for particular
+        # modules, e.g.
+        #LogLevel info ssl:warn
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        # Load Balancer Configuration
+        <Proxy "balancer://mycluster">
+            BalancerMember http://172.31.2.177:80 loadfactor=5 timeout=1
+            BalancerMember http://172.31.2.114:80 loadfactor=5 timeout=1
+            BalancerMember http://172.31.5.137:80 loadfactor=5 timeout=1
+            ProxySet lbmethod=bytraffic
+            ProxySet stickysession=PHPSESSID
+            # ProxySet lbmethod=byrequests
+        </Proxy>
+
+        ProxyPreserveHost On
+        ProxyPass / balancer://mycluster/
+        ProxyPassReverse / balancer://mycluster/
+
+        # For most configuration files from conf-available/, which are
+        # enabled or disabled at a global level, it is possible to
+        # include a line for only one particular virtual host. For example, the
+        # following line enables the CGI configuration for this host only
+        # after it has been globally disabled with "a2disconf".
+        #Include conf-available/serve-cgi-bin.conf
+</VirtualHost>
+
    ```
 
-3. Replace `172.31.2.177`, `172.31.2.114`, and `172.31.5.137` with the actual private IP addresses of your web servers.
+>Replace **172.31.2.177**, **172.31.2.114**, and **172.31.5.137** with the actual private IP addresses of your web servers.
+
+>NB: it is not mandatory to name it **mycluster**, you can choose any name that makes sense to you
 
 >**Load Balancing Methods**
 Apache provides several load balancing methods. The method is specified by the lbmethod parameter in the ProxySet directive. Here's a summary of available methods:
@@ -259,9 +297,7 @@ Apache provides several load balancing methods. The method is specified by the l
 >To change the load balancing method, simply update the lbmethod parameter in the ProxySet directive. For example:
 
 ```apache
-
 ProxySet lbmethod=bytraffic
-
 ```
 
 Choose the method that best suits your application's needs and traffic patterns.
@@ -272,6 +308,8 @@ Choose the method that best suits your application's needs and traffic patterns.
    ```
    sudo systemctl restart apache2
    ```
+
+>*NB: adjust the security group for the web servers to only allow traffic to the port 80 from the load balancer only while the load balancer port 80 is open to the public.*
 
 ### Step 5: Verify Load Balancer Configuration
 
@@ -294,11 +332,12 @@ Choose the method that best suits your application's needs and traffic patterns.
 2. Add entries for your web servers:
 
    ```
-   <WebServer1-Private-IP-Address> Web1
-   <WebServer2-Private-IP-Address> Web2
-   <WebServer3-Private-IP-Address> Web3
+   172.31.2.177 Web1
+   172.31.2.114 Web2
+   172.31.5.137 Web3
    ```
-
+>Replace **172.31.2.177**, **172.31.2.114**, and **172.31.5.137** with the actual private IP addresses of your web servers.
+  
 3. Save the file and exit the editor
 
 4. Update your Apache configuration to use these names:
@@ -308,6 +347,16 @@ Choose the method that best suits your application's needs and traffic patterns.
    ```
 
 5. Replace the IP addresses with the corresponding names (Web1, Web2, Web3)
+
+   ```apache
+    # Load Balancer Configuration using hostnames from /etc/hosts
+    <Proxy "balancer://mycluster">
+        BalancerMember http://Web1:80 loadfactor=5 timeout=1
+        BalancerMember http://Web2:80 loadfactor=5 timeout=1
+        BalancerMember http://Web3:80 loadfactor=5 timeout=1
+        ProxySet lbmethod=bytraffic
+    </Proxy>
+   ```
 
 6. Restart Apache:
    ```
@@ -325,6 +374,9 @@ Choose the method that best suits your application's needs and traffic patterns.
 
    - Refresh the page multiple times
    - Check the access logs on each web server to confirm they're all receiving traffic
+   ```bash
+   sudo tail -f /var/log/httpd/access_log
+   ```
 
 3. **Failover Testing**:
 
@@ -365,6 +417,8 @@ If you encounter issues, try the following:
 
 5. **Validate Configuration**: Double-check your Apache configuration for typos or misconfigurations
 
+![final output](images/final.png)
+
 ## Conclusion
 
 This project enhances the DevOps Tooling Website Solution by implementing a load balancing solution using Apache. This improvement distributes traffic evenly among the web servers, increasing the scalability and reliability of the application. Through this process, you've gained practical experience in configuring a load balancer and improved your understanding of web application architecture.
@@ -385,3 +439,4 @@ This project enhances the DevOps Tooling Website Solution by implementing a load
 - [Introduction to Load Balancing Concepts](https://www.nginx.com/resources/glossary/load-balancing/)
 - [Load Balancing Concepts](https://www.f5.com/glossary/load-balancer)
 - [3-Tier application setup with NFS](https://youtu.be/FwqMLh0AUJM)
+- []()
