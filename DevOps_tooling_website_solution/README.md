@@ -803,12 +803,6 @@ sudo dnf install https://rpms.remirepo.net/enterprise/remi-release-9.rpm
    sudo systemctl enable php-fpm
    ```
 
-5. Restart Apache to apply the changes:
-   ```bash
-   sudo systemctl restart httpd
-   ```
-
-
 6.  Configure SELinux (Security-Enhanced Linux)
 
 > **SELinux** is a security module that enforces strict access control policies on your system, especially important for enterprise environments like Red Hat. It helps limit the damage that could be caused by compromised services, including the web server and PHP. By default, **SELinux** is set to **enforcing** mode on **RHEL**. This mode restricts many actions that Apache and PHP-FPM might need to function correctly.
@@ -888,6 +882,7 @@ Create a **PHP info page** to verify that PHP is correctly served through Apache
 
 - Create a test PHP file:
    ```bash
+   sudo mkdir /var/www/html
    sudo nano /var/www/html/info.php
    ```
 
@@ -896,6 +891,10 @@ Create a **PHP info page** to verify that PHP is correctly served through Apache
    <?php
    phpinfo();
    ?>
+   ```
+- Restart Apache to apply the changes:
+   ```bash
+   sudo systemctl restart httpd
    ```
 
 - Access this file via your web browser:
