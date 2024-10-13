@@ -77,19 +77,19 @@ graph TD
     WS3 <-.-> |DB Traffic| DB
   end
 
-  style NFS fill:#f9f,stroke:#333,stroke-width:4px
-  style WS1 fill:#bbf,stroke:#333,stroke-width:2px
-  style WS2 fill:#bbf,stroke:#333,stroke-width:2px
-  style WS3 fill:#bbf,stroke:#333,stroke-width:2px
-  style DB fill:#bfb,stroke:#333,stroke-width:4px
-  style LB fill:#ffa,stroke:#333,stroke-width:4px
-  style AWS_Cloud fill:#f0f0f0,stroke:#333,stroke-width:2px
+  style NFS fill:#f9f,stroke:#000,stroke-width:4px
+  style WS1 fill:#bbf,stroke:#000,stroke-width:2px
+  style WS2 fill:#bbf,stroke:#000,stroke-width:2px
+  style WS3 fill:#bbf,stroke:#000,stroke-width:2px
+  style DB fill:#bfb,stroke:#000,stroke-width:4px
+  style LB fill:#ffa,stroke:#000,stroke-width:4px
+  style AWS_Cloud fill:#f0f0f0,stroke:#000,stroke-width:2px
   style LB_Layer fill:#ffe6cc,stroke:#d79b00,stroke-width:2px
   style Web_Layer fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
   style NFS_Layer fill:#fff2cc,stroke:#d6b656,stroke-width:2px
   style DB_Layer fill:#d5e8d4,stroke:#82b366,stroke-width:2px
 
-  classDef default fill:#fff,stroke:#333,stroke-width:2px;
+  classDef default fill:#fff,stroke:#000,stroke-width:2px;
   classDef plaintext fill:none,stroke:none,color:black;
   class Client,LB,NFS,WS1,WS2,WS3,DB,EBS1,EBS2,EBS3,DBEBS1,DBEBS2,DBEBS3 default;
   class AWS_Cloud,LB_Layer,Web_Layer,NFS_Layer,DB_Layer plaintext;
