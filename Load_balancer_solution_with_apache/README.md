@@ -439,4 +439,4 @@ This project enhances the DevOps Tooling Website Solution by implementing a load
 - [Introduction to Load Balancing Concepts](https://www.nginx.com/resources/glossary/load-balancing/)
 - [Load Balancing Concepts](https://www.f5.com/glossary/load-balancer)
 - [3-Tier application setup with NFS](https://youtu.be/FwqMLh0AUJM)
-- []()
+- [Video tutorial on Load balancer](https://youtu.be/mY70zQ54FMQ)
