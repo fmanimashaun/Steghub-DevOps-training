@@ -240,8 +240,6 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    - **p** - Print partition table informatoon
    - **w** - Write changes to disk
 
-   ![Partitioning outcome](images/partitioning-1.png)
-
    You do the same for the remaining EBS blocks using the commands below:
    - xvdc block:
    ```bash
@@ -252,12 +250,13 @@ Connect to the nfs-server instance via the ssh terminal to have access to the sy
    ```bash
    sudo gdisk /dev/xvdd
    ```
+   ![Partition confirmation](images/confirmation%20of%20partitions-1.png)
 
    confirm the partitions using **lsblk**
    ```bash
    lsblk
    ```
-![Partition confirmation](images/confirmation%20of%20partitions-1.png)
+![Partitioning outcome](images/partitioning-1.png)
 
 > note down the partition names: **xvdb1**, **xvdc1** and **xvdd1**
 
