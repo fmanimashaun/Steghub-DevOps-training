@@ -280,7 +280,6 @@ Update the `</VirtualHost>` tag as follows:
         # after it has been globally disabled with "a2disconf".
         #Include conf-available/serve-cgi-bin.conf
 </VirtualHost>
-
    ```
 
 >Replace **172.31.2.177**, **172.31.2.114**, and **172.31.5.137** with the actual private IP addresses of your web servers.
