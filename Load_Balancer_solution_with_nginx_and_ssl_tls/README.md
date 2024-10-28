@@ -5,14 +5,15 @@
 2. [Project Overview](#project-overview)
 3. [Architecture](#architecture)
 4. [Prerequisites](#prerequisites)
-5. [Self-Study](#self-study)
+5. [AWS setup overview](#aws-setup-overview)
+6. [Self-Study](#self-study)
    - [SSL/TLS and Certificate Authorities (CAs)](#ssltls-and-certificate-authorities-cas)
    - [Domains, DNS, and Common DNS Records](#domains-dns-and-common-dns-records)
    - [Key Concepts for Nginx Load Balancing](#key-concepts-for-nginx-load-balancing)
-6. [Implementation](#implementation)
-7. [Testing and Validation](#testing-and-validation)
-8. [Future Improvements](#future-improvements)
-9. [References](#references)
+7. [Implementation](#implementation)
+8. [Testing and Validation](#testing-and-validation)
+9. [Future Improvements](#future-improvements)
+10. [References](#references)
 
 ## Introduction
 In this project, we’ll enhance the DevOps Tooling Website setup by:
@@ -130,6 +131,40 @@ Before starting, ensure you have:
 5. Familiarity with Jenkins.
 6. Access to an AWS account.
 7. A GitHub account and repository for the project.
+
+## AWS setup overview
+1. EC2 Instances Overview
+
+  ![EC2 used](images/ec2-list.png)
+
+2. EBS Overview
+
+  ![EBS used](images/ebs-list.png)
+
+3. Security Groups Overview
+
+  ![Security group list](images/sg-list.png)
+
+4. NFS server Security Group Setup Overview
+
+  ![Security group NFS](images/nfs-sg.png)
+
+5. DB server Security Group Setup Overview
+
+  ![Security group DB](images/db-sg.png)
+
+6. Web server Security Group Setup Overview
+
+  ![Security group Web](images/web-sg.png)
+
+7. Load balancer server Security Group Setup Overview
+
+  ![Security group LB](images/lb-sg.png)
+
+8. Jenkins server Security Group Setup Overview
+
+  ![Security group Jenkins](images/jenkins-sg.png)
+
 
 ## Self-Study
 
