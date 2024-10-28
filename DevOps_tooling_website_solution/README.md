@@ -941,6 +941,7 @@ VALUES ('myuser', MD5('password'), 'user@mail.com', 'admin', '1');
 - update the database connection info in the function.php file
 
 ```bash
+sudo cp -R html/ /var/www/   # assuming you are still inside the tooling directory
 sudo nano /var/www/html/function.php
 ```
 
