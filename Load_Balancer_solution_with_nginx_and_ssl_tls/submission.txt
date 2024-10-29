@@ -1,1 +1,1 @@
-https://github.com/fmanimashaun/Steghub-DevOps-training/tree/main/Tooling_website_deployment_automation_with_continuous_integration-jenkins
+https://github.com/fmanimashaun/Steghub-DevOps-training/tree/main/Load_Balancer_solution_with_nginx_and_ssl_tls
