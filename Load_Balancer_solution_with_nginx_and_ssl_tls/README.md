@@ -202,25 +202,44 @@ Nginx is commonly used for load balancing due to its flexibility and high perfor
      sudo apt install nginx -y
      ```
 
-2. **Edit the Nginx configuration** (usually at `/etc/nginx/nginx.conf` or in `/etc/nginx/conf.d/`):
-   - Define the `up
+    ```bash
+    sudo systemctl status nginx
+    ```
 
-stream` block to enable session persistence with cookies.
+    ![Nginx status](images/nginx-status.png)
+
+2. **Edit the Nginx configuration** (usually at `/etc/nginx/nginx.conf` or in `/etc/nginx/conf.d/`):
    - Use hostnames for backend servers to allow easy management through `/etc/hosts`.
+
+    ```bash
+    sudo nano /etc/hosts
+    ```
+   - Map hostnames to IPs for the backend servers:
+
+     ```plaintext
+      172.31.3.234 web1
+      172.31.9.174 web2
+      172.31.1.127 web3
+     ```
+
+   - Define the `upstream` block.
+
+   ```bash
+   sudo nano /etc/nginx/nginx.conf
+   ```
 
    ```nginx
    http {
        # Load Balancer Configuration
        upstream mycluster {
-           sticky cookie srv_id expires=1h;  # Enables sticky sessions with cookies
-           server Web1:80 max_fails=3 fail_timeout=10s;
-           server Web2:80 max_fails=3 fail_timeout=10s;
-           server Web3:80 max_fails=3 fail_timeout=10s;
+           server web1:80 weight=5;
+           server web2:80 weight=5;
+           server web3:80 weight=5;
        }
 
        server {
            listen 80;
-           server_name yourdomain.com;
+           server_name _;
 
            location / {
                proxy_pass http://mycluster;
@@ -236,55 +255,102 @@ stream` block to enable session persistence with cookies.
    }
    ```
 
-3. **Update `/etc/hosts` File**:
-   - Map hostnames to IPs for the backend servers:
-
-     ```plaintext
-     172.31.2.177 Web1
-     172.31.2.114 Web2
-     172.31.5.137 Web3
-     ```
-
 4. **Test and Restart Nginx**:
    - Test the configuration:
      ```bash
      sudo nginx -t
      ```
+     > NB: If the configuration is error-free, you’ll see output similar to:
+     ```
+     nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+     nginx: configuration file /etc/nginx/nginx.conf test is successful
+     ```
+
+  - Remove the default page:
+    ```
+    sudo rm /etc/nginx/sites-enabled/default
+    ```
+
    - Restart Nginx:
      ```bash
      sudo systemctl restart nginx
      ```
 
-4. Attach an Elastic IP and Configure Domain
+4. Register a domain
+
+Get a domain name from any domain providers but if you in Nigeria, I will recommend getting `.com.ng` or `.net.ng`for as low as **2,600 naira** from [Domainking](https://clients.domainking.ng/aff.php?aff=5317)
+
+![Domain purchase](images/domain-purchase.png)
+
+>NB: Make sure you unselect **Domain Warranty - 2999/yr** to keep the cost within 2,600 naira
+
+5. Attach an Elastic IP and Configure Domain
     
     - In AWS, allocate an Elastic IP and attach it to the Nginx instance.
-    - Register a domain (e.g., Route 53 or any domain provider or using an existing domain) and create an A record pointing to the Elastic IP.
+    - create an A record in your domain DNS manager and pointing to the Elastic IP.
+    - Create a CNAME record and point to the A record.
+    - update the server_name in your nginx config with `<domainname>.com www.<domainname>.com` e.g `fmanimashaun.com.ng www.fmanimashaun.com.ng`
+    - Visit [DNS Check](https://dnschecker.org/) to test your dns record.
+    - Add the Private IP of the load balancer to the web server security group on AWS
 
-5. Install SSL/TLS Certificate
+  ![Elastic IP](images/elastic-ip.png)
+
+6. Install SSL/TLS Certificate
+    - Make sure the snapd service is active:
+    ```bash
+    sudo systemctl status snapd
+    ```
+
+    ![Snap status](images/snap-staus.png)
+
     - **Install Certbot for Nginx**:
     ```bash
-    sudo apt install certbot python3-certbot-nginx -y
+    sudo snap install --classic certbot
     ```
     - **Obtain and Install SSL Certificate**:
+    1. Let certbot obtain the domain names directly from nginx config file:
     ```bash
-    sudo certbot --nginx -d <your-domain.com> -d www.<your-domain.com>
+    sudo ln -s /snap/bin/certbot /usr/bin/certbot
     ```
+
+    2. Install certificate with the command and follow the instructions:
+    ```bash
+    sudo certbot --nginx
+    ```
+    3. Simulate the renewal process:
+    By default, LetEncrypt certificate is valid for 90 days, it is recommended to renew it every 60 days to ensure your site remains secured. to simulate the renewal process, run the command:
+    ```bash
+    sudo certbot renew --dry-run
+    ```
+   ![SSL renewal simulation](images/ssl-renewal-simulation.png)
+    >NB: Remember to open the https port on AWS
+
     - **Schedule Auto-Renewal**:
     ```bash
-    sudo crontab -e
+    crontab -e
     ```
     Add:
     ```bash
-    0 0 * * * /usr/bin/certbot renew --quiet
+    */12 * * * * root /usr/bin/certbot renew > /dev/null 2>&1
     ```
 
-6. **Swap Apache with Nginx Load Balancer**:
+    >This command runs twice daily (every 12 hours).
+    >The **> /dev/null 2>&1** redirect suppresses all output, both standard and error messages, keeping the system logs clean.
+
+    >NB: This will check the SSL certificate validity twice daily. You can adjust it if twice is too much, see [cron guru](https://crontab.guru/) for reference
+
+  ![SSL certificate](images/ssl-certificate.png)
+
+7. **Swap Apache with Nginx Load Balancer**:
    - After verifying the Nginx load balancer works, update DNS to route traffic through Nginx instead of the Apache load balancer.
 
 ## Testing and Validation
 1. **Access via HTTPS**: Confirm that your domain is accessible over HTTPS and correctly routes to backend servers.
+
 2. **Trigger CI/CD Pipeline**: Push changes to GitHub and verify Jenkins automatically deploys updates.
 3. **Check SSL Certificate Renewal**: Manually check Certbot renewal logs to confirm setup.
+
+![final output](images/final-output.png)
 
 ## Future Improvements
 - Add monitoring and alerting for Nginx with tools like Prometheus or Grafana.
