@@ -73,13 +73,11 @@ graph TD
       DB --- DBEBS3
     end
 
-    subgraph CICD_Layer[CI/CD Layer]
-      Jenkins[Jenkins Server t2.micro]
-      JenkinsEBS[EBS 8GB]
-      Ansible[Ansible Bastion Server t2.micro]
-      Jenkins --- JenkinsEBS
-      Ansible --- Jenkins
-    end
+  	subgraph CICD_Layer[CI/CD Layer]
+			JenkinsAnsible[Jenkins & Ansible Server t2.micro]
+			JenkinsEBS[EBS 8GB]
+			JenkinsAnsible --- JenkinsEBS
+  	end
 
     WS1 <-.-> |NFS Traffic| NFS
     WS2 <-.-> |NFS Traffic| NFS
