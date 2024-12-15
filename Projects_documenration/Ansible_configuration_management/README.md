@@ -285,13 +285,17 @@ ssh-add -l
 
 ```bash
 Host jenkins-ansible
-  HostName <the jenkins-ansible dns url>
+  HostName ec2-13-39-37-8.eu-west-3.compute.amazonaws.com
   User ubuntu
-  IdentityFile <path to the private key on the local machine>
+  IdentityFile ~/devops-training/sample-server.pem
   ForwardAgent yes
   AddKeysToAgent yes
+  ControlMaster auto
+  ControlPath ~/.ssh/sockets/%h-%p-%r
+  ControlPersist 60s
 ```
 
+ create the socket directory: `mkdir -p ~/.ssh/sockets`
 4. Save and connect. If everything is configured correctly, VS Code will establish an SSH connection to the `jenkins-ansible` server.
 
 ### Step 5: Ensure SSH Agent Forwarding Works on Remote Server
