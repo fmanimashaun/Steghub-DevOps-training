@@ -192,60 +192,194 @@ VS Code’s **Remote - SSH** extension allows developers to seamlessly work on r
 
 
 ## Implementation
+### Step 1: Configure SSH Agent on Local Machine
 
-### Step 1: Create the Repository
+1. Open **Visual Studio Code** and initialize the SSH agent:
 
-We began by creating a GitHub repository called **ansible-config-mgt**. Inside this repository, we created the following folder structure:
+   ```bash
+   eval "$(ssh-agent -s)"
+   ssh-add ~/path_to_the_private_key
+   ssh-add -l
+   ```
+![ssh agent](./images/ssh-agent.png)
+   > **Note:** Replace `~/path_to_the_private_key` with the actual path to your private key file (e.g., `~/.ssh/id_rsa`). Ensure that the private key has proper permissions (e.g., `chmod 600`).
 
-- `inventory/`
-  - `dev.yml`
-  - `prod.yml`
-  - `staging.yml`
-  - `uat.yml`
-- `playbook/`
-  - `common.yml`
+2. Use **Remote SSH** in VS Code to connect to the remote host. Configure the `~/.ssh/config` file when prompted:
 
-### Step 2: Define Inventory Files
+   ```bash
+   Host jenkins-ansible
+     HostName ec2-13-39-37-8.eu-west-3.compute.amazonaws.com
+     User ubuntu
+     IdentityFile ~/devops-training/sample-server.pem
+     ForwardAgent yes
+     AddKeysToAgent yes
+     ControlMaster auto
+     ControlPath ~/.ssh/sockets/%h-%p-%r
+     ControlPersist 60s
+   ```
+![ssh agent config](./images/ssh-agent-config.png)
+   > **Note:** If the `~/.ssh/config` file does not exist, create it manually using `touch ~/.ssh/config`.
 
-We defined the inventory for different environments in the `dev.yml` file, which contains the following groups and configuration:
+3. Create the socket directory to enable multiplexed connections:
 
-**dev.yml**:
+   ```bash
+   mkdir -p ~/.ssh/sockets
+   ```
 
+4. Save the configuration and connect. If successful, VS Code will establish an SSH connection to the `jenkins-ansible` server.
+
+![remote ssh vscode](./images/remote-ssh-1.png)
+![remote ssh vscode](./images/remote-ssh-2.png)
+
+### Step 2: Ensure SSH Agent Forwarding Works on Remote Server
+
+1. Verify if the remote server has access to the SSH agent:
+
+   ```bash
+   ssh-add -l
+   ```
+
+2. If an error occurs, set the SSH agent socket:
+
+   ```bash
+   export SSH_AUTH_SOCK=$(ls -t /tmp/ssh-**/* | head -1)
+   ```
+
+3. Re-run the `ssh-add -l` command to confirm access to the private key.
+
+   > **Note:** Ensure `ForwardAgent yes` is correctly set in the `~/.ssh/config` file to enable agent forwarding.
+
+
+### Step 3: Install Ansible on Remote Server
+
+1. Update the package manager and install Ansible:
+
+   ```bash
+   sudo apt update
+   sudo apt install ansible -y
+   ```
+
+   > **Note:** Confirm Ansible installation by running `ansible --version`. Ensure that the installed version is compatible with your playbooks.
+
+
+### Step 4: Set Up SSH Key for GitHub Access
+
+1. Generate a new SSH key if needed:
+
+   ```bash
+   ssh-keygen -t ed25519 -C "your_email@example.com"
+   ```
+
+   > **Note:** Replace `"your_email@example.com"` with your actual email address. If you already have an existing SSH key, this step can be skipped.
+
+2. Add the SSH key to GitHub:
+   - Copy the public key:
+
+     ```bash
+     cat ~/.ssh/id_ed25519.pub
+     ```
+
+   - Go to **GitHub Settings** > **SSH and GPG keys** > **New SSH key** and paste the key.
+
+3. Test the connection:
+
+   ```bash
+   ssh -T git@github.com
+   ```
+
+   > **Note:** A successful connection message indicates proper authentication, but GitHub does not provide shell access.
+
+### Step 5: Create an Empty Repository on GitHub  
+
+1. Log in to your GitHub account.  
+2. Create a new repository named `ansible-config-mgt`:  
+   - **Repository name:** `ansible-config-mgt`  
+   - **Description:** (optional)  
+   - Leave the repository empty (do not add a README, `.gitignore`, or license).  
+   - Click **Create repository**.  
+
+![empty github repo](./images/empty-repo.png)
+> **Note:** The repository URL will look like `git@github.com:<username>/ansible-config-mgt.git`. Replace `<username>` with your GitHub username in the following steps.  
+
+
+### Step 6: Push the Repository to GitHub  
+
+1. Initialize a local Git repository:  
+   ```bash
+   echo "# ansible-config-mgt" >> README.md
+   git init
+   git add .
+   git commit -m "Project initialization"
+   git branch -M main
+   git remote add origin git@github.com:<username>/ansible-config-mgt.git
+   git push -u origin main
+   ```
+
+2. If a permission error occurs, run:  
+   ```bash
+   sudo chown -R ubuntu:ubuntu /home/ubuntu/ansible-config-mgt
+   ```
+
+> **Note:** This step ensures the correct ownership of files if you're working on a shared system or remote server.  
+
+
+### Step 7: Create Required Inventory and Playbook Files  
+
+1. Create the following files and directories in your local repository:  
+   ```bash
+   mkdir -p inventory playbooks
+   touch inventory/dev.yml inventory/staging.yml inventory/prod.yml inventory/uat.yml playbooks/common.yml
+   ```
+
+2. Ensure the repository structure looks like this:  
+   ```text
+   ansible-config-mgt/
+   ├── inventory/
+   │   ├── dev.yml
+   │   ├── staging.yml
+   │   ├── prod.yml
+   │   └── uat.yml
+   └── playbooks/
+       └── common.yml
+   ```  
+
+> **Note:** These files will be updated with appropriate content in Step 8.
+
+
+### Step 8: Update Inventory and Playbook Files  
+
+#### Update `inventory/dev.yml`  
+Replace the content of `inventory/dev.yml` with the following:  
 ```yaml
-[nfs]
+[nfs_server]
 172.31.11.175 ansible_ssh_user=ec2-user
 
-[webs]
+[web_servers]
 172.31.13.144 ansible_ssh_user=ec2-user
 172.31.10.244 ansible_ssh_user=ec2-user
 172.31.10.220 ansible_ssh_user=ec2-user
 
-[db]
+[db_server]
 172.31.11.187 ansible_ssh_user=ec2-user
 
-[lb]
+[lb_server]
 172.31.9.89 ansible_ssh_user=ubuntu
 
 [all:vars]
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 ```
 
-- **nfs**: Defines the NFS server.
-- **webs**: Defines the web servers.
-- **db**: Defines the database server.
-- **lb**: Defines the load balancer.
-- **all:vars**: Defines common SSH arguments for all hosts.
+- **nfs_server:** Defines the NFS server.
+- **web_servers:** Defines the web servers.
+- **db_server:** Defines the database server.
+- **lb_server:** Defines the load balancer.
+- **all:vars:** Defines common SSH arguments for all hosts.
 
-### Step 3: Create the Playbook
-
-We created a simple Ansible playbook in **common.yml** to update the servers and install the latest version of Wireshark:
-
-**common.yml**:
-
+#### Update `playbooks/common.yml`  
+Replace the content of `playbooks/common.yml` with the following:  
 ```yaml
----
 - name: update web, nfs, and db servers
-  hosts: nfs, webs, db
+  hosts: nfs_server, web_servers, db_server
   become: yes
   tasks:
     - name: ensure wireshark is at the latest version
@@ -254,7 +388,7 @@ We created a simple Ansible playbook in **common.yml** to update the servers and
         state: latest
 
 - name: update LB server
-  hosts: lb
+  hosts: lb_server
   become: yes
   tasks:
     - name: Update apt repo
@@ -267,71 +401,46 @@ We created a simple Ansible playbook in **common.yml** to update the servers and
         state: latest
 ```
 
-- This playbook updates all servers in the `nfs`, `webs`, and `db` groups, ensuring Wireshark is installed at the latest version.
-- The `lb` group uses the `apt` package manager to update the repository cache and install Wireshark.
+> **Note:** Ensure you update the IP addresses and user credentials (`ansible_ssh_user`) to match your actual server configurations.  
 
-### Step 4: Configure SSH Agent on Local Machine
 
-1. Open **Visual Studio Code** and use the following commands to initialize the SSH agent on your local machine:
+### Step 9: Commit and Push Changes  
 
-```bash
-eval "$(ssh-agent -s)"
-ssh-add ~/path_to_the_private_key
-ssh-add -l
-```
+1. Add and commit the newly created files:  
+   ```bash
+   git add inventory/dev.yml inventory/staging.yml inventory/prod.yml inventory/uat.yml playbooks/common.yml
+   git commit -m "Add inventory files and common playbook"
+   git push origin main
+   ```
 
-2. After adding the private key, use **Remote SSH** in VS Code to connect to the remote host via SSH.
-3. The first time you connect, VS Code will prompt for configuration in the `~/.ssh/config` file. Add the following configuration:
+2. Verify the changes on GitHub.
 
-```bash
-Host jenkins-ansible
-  HostName ec2-13-39-37-8.eu-west-3.compute.amazonaws.com
-  User ubuntu
-  IdentityFile ~/devops-training/sample-server.pem
-  ForwardAgent yes
-  AddKeysToAgent yes
-  ControlMaster auto
-  ControlPath ~/.ssh/sockets/%h-%p-%r
-  ControlPersist 60s
-```
+![update on github](./images/github-1.png)
+![create PR on github](./images/pull-request.png)
 
- create the socket directory: `mkdir -p ~/.ssh/sockets`
-4. Save and connect. If everything is configured correctly, VS Code will establish an SSH connection to the `jenkins-ansible` server.
+### Step 9: Run Ansible Playbook
 
-### Step 5: Ensure SSH Agent Forwarding Works on Remote Server
+1. Verify SSH agent forwarding:
 
-Once connected to the remote server, run the following command to check if the remote server has access to the local SSH agent:
+   ```bash
+   ssh-add -l
+   ```
 
-```bash
-ssh-add -l
-```
+   If an error occurs, set the SSH agent socket:
 
-If you receive an error, run the following command to set the SSH agent socket:
+   ```bash
+   export SSH_AUTH_SOCK=$(ls -t /tmp/ssh-**/* | head -1)
+   ```
 
-```bash
-export SSH_AUTH_SOCK=$(ls -t /tmp/ssh-**/* | head -1)
-```
+   > **Note:** Agent forwarding is necessary to authenticate with private keys on the remote server during playbook execution.
 
-Then, re-run the `ssh-add -l` command to ensure the private key is accessible on the remote server.
+2. Run the playbook:
 
-### Step 6: Clone the Repository and Run the Playbook
-
-1. On the remote server, clone the **ansible-config-mgt** repository:
-
-```bash
-git clone https://github.com/fmanimashaun/ansible-config-mgt.git
-cd ansible-config-mgt
-```
-
-2. Run the Ansible playbook using the following command:
-
-```bash
-ansible-playbook -i inventory/dev.yml playbook/common.yml
-```
-
-If everything is set up correctly, Ansible will run the playbook on the target servers as defined in the inventory, installing the latest version of Wireshark on the `nfs`, `webs`, `db`, and `lb` servers.
-
-This process outlines the steps from creating the repository, setting up SSH agent forwarding, and configuring VS Code to running the Ansible playbook for updating servers across different environments.
+   ```bash
+   ansible-playbook -i inventory/dev.yml playbooks/common.yml
+   ```
+![Ansible output](./images/ansible-output.png)
+   > **Note:** Before running the playbook, ensure all variables and configurations in `playbooks/common.yml` are correctly defined.
 
 
 ## Future Improvements
