@@ -147,3 +147,21 @@ The setup is verified by checking HTTPS accessibility, testing CI/CD functionali
 #### [Video Demonstration Link](https://youtu.be/76VbOsroj5g)
 
 ---
+
+### 11. [Ansible Configuration Management Solution](/Projects_documentation/Ansible_Configuration_Management/README.md)
+
+#### Overview:  
+This project extends the DevOps Tooling Website Deployment with CI/CD by integrating an Ansible workflow for automated configuration management. The Jenkins server is repurposed as a bastion host, enabling seamless Ansible playbook execution to manage the infrastructure effectively.
+
+**Key Components**:  
+1. **Ansible Workflow**: Automates configuration tasks such as application deployment, environment setup, and resource updates, ensuring consistency across servers.  
+2. **Jenkins as Bastion Host**: Leverages the Jenkins server for secure Ansible playbook execution, simplifying deployment to backend servers.  
+3. **Role-Based Playbooks**: Implements reusable Ansible roles for modular and scalable infrastructure management.  
+4. **CI/CD Integration**: Ensures continuous delivery of updates through automated Ansible workflows integrated into the Jenkins pipeline.
+
+**Testing and Validation**:  
+The solution is validated through infrastructure inspections, application deployment testing, and role-specific task verification to ensure consistent configuration across the environment.
+
+#### [Video Demonstration Link](#)  
+
+--- 
