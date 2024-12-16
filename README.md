@@ -162,6 +162,6 @@ This project extends the DevOps Tooling Website Deployment with CI/CD by integra
 **Testing and Validation**:  
 The solution is validated through infrastructure inspections, application deployment testing, and role-specific task verification to ensure consistent configuration across the environment.
 
-#### [Video Demonstration Link](#)  
+#### [Video Demonstration Link](https://youtu.be/Ng4j6ldrf7Q)  
 
 --- 
