@@ -4,7 +4,7 @@ This repository documents project-based learning tasks for the Steghub DevOps En
 
 ## Projects:
 ---
-### 1. [Web Stack Implementation (LAMP)](/Projects_documenration/Webstack_implementation_lamp/README.md)
+### 1. [Web Stack Implementation (LAMP)](./Projects_documenration/Webstack_implementation_lamp/README.md)
 
 #### Overview:
 This project involves deploying a **LAMP stack**—Linux, Apache, MySQL, and PHP—on an **Ubuntu 22** server hosted on **AWS EC2**. This stack enables dynamic web application hosting by leveraging **Apache** as the web server, **MySQL** as the database, and **PHP** for server-side scripting. Apache was selected for its robust community support and straightforward configuration.
@@ -14,7 +14,7 @@ The deployment process includes setting up an EC2 instance, installing and confi
 #### [Video Demonstration Link](https://youtu.be/5K0mHssuN-I)
 
 ---
-### 2. [Web Stack Implementation (LEMP)](/Projects_documenration/Webstack_implementation_lemp/README.md)
+### 2. [Web Stack Implementation (LEMP)](./Projects_documenration/Webstack_implementation_lemp/README.md)
 
 #### Overview:
 This project involves deploying a **LEMP stack**—Linux, Nginx, MySQL, and PHP—on an **Ubuntu 24.04 LTS** instance hosted on **AWS EC2**. This stack enables dynamic web application hosting by leveraging **Nginx** as the web server, **MySQL** as the database, and **PHP** for scripting. Nginx is chosen for its efficient handling of concurrent requests, making it suitable for high-traffic environments and reducing latency.
@@ -24,7 +24,7 @@ The deployment process covers setting up the EC2 instance, installing and config
 #### [Video Demonstration Link](https://youtu.be/WTpdTachEmY)
 
 ---
-### 3. [MERN Stack Implementation](/Projects_documenration/MERN_stack_implementation/README.md)
+### 3. [MERN Stack Implementation](./Projects_documenration/MERN_stack_implementation/README.md)
 
 #### Overview:
 This project focuses on deploying a **MERN stack**—MongoDB, Express, React, Node.js—on an **AWS EC2 instance** with a self-hosted MongoDB database. This stack supports full-stack application hosting with a custom-configured backend database on a production server, ensuring flexibility and control over data management.
@@ -36,7 +36,7 @@ This configuration offers a stable and scalable environment, ideal for productio
 #### [Video Demonstration Link](https://youtu.be/pfCMVZymwdY)
 
 ---
-### 4. [MEAN Stack Implementation](/Projects_documenration/MEAN_stack_implementation/README.md)
+### 4. [MEAN Stack Implementation](./Projects_documenration/MEAN_stack_implementation/README.md)
 
 #### Overview:
 This project focuses on deploying a **MEAN stack**—MongoDB, Express, Angular, Node.js—on an **AWS EC2 instance** with a self-hosted MongoDB database. This stack allows for full-stack application hosting with direct backend control, ideal for production environments where data privacy and autonomy are prioritized.
@@ -60,7 +60,7 @@ This configuration provides a stable, scalable environment for client-server arc
 #### [Video Demonstration Link](https://youtu.be/Ttx4QE7_QRI)
 
 ---
-### 6. [Web Solution with Wordpress](/Projects_documenration/Web_solution_with_wordpress/README.md)
+### 6. [Web Solution with Wordpress](./Projects_documenration/Web_solution_with_wordpress/README.md)
 
 #### Overview:
 This project involves setting up **WordPress** on an **AWS EC2 instance** running **Red Hat Enterprise Linux (RHEL) 9.4** with multiple **EBS volumes** configured using **Logical Volume Manager (LVM)** for efficient storage management. The architecture consists of two EC2 instances:
@@ -91,7 +91,7 @@ The infrastructure is managed through EC2 instances with properly assigned secur
 #### [Video Demonstration Link](https://youtu.be/FwqMLh0AUJM)
 
 ---
-### 8. [Load Balancer Solution with Apache](/Projects_documenration/Load_balancer_solution_with_apache/README.md)
+### 8. [Load Balancer Solution with Apache](./Projects_documenration/Load_balancer_solution_with_apache/README.md)
 
 #### Overview:
 This project outlines the setup of an **Apache-based load balancer** to enhance the **DevOps Tooling Website Solution** with even traffic distribution across three web servers. By incorporating load balancing, the solution improves scalability and reliability, ensuring high availability and better resource utilization across the infrastructure.
@@ -112,7 +112,7 @@ The setup is validated by accessing the application via the load balancer, check
 #### [Video Demonstration Link](https://youtu.be/mY70zQ54FMQ)
 
 ---
-### 9. [DevOps Tooling Website Deployment with CI/CD - Jenkins](/Projects_documenration/Tooling_website_deployment_automation_with_continuous_integration-jenkins/README.md)
+### 9. [DevOps Tooling Website Deployment with CI/CD - Jenkins](./Projects_documenration/Tooling_website_deployment_automation_with_continuous_integration-jenkins/README.md)
 
 #### Overview:
 This project extends the **DevOps Tooling Website Solution** and **Load Balancer Solution with Apache** by integrating a **CI/CD pipeline** using **Jenkins**. This pipeline enables automated builds, testing, and deployment for continuous delivery to our website. Leveraging Jenkins for CI/CD, this setup automates code integration from GitHub, triggers builds, and deploys updated files to the NFS server for centralized access across all web servers, streamlining the deployment process and improving site reliability and efficiency.
@@ -130,7 +130,7 @@ The solution ensures continuous deployment by triggering builds from GitHub comm
 #### [Video Demonstration Link](https://youtu.be/jkOIwwBbG3g)
 
 ---
-### 10. [Load Balancer Solution with Nginx and SSL/TLS](/Projects_documenration/Load_Balancer_solution_with_nginx_and_ssl_tls/README.md)
+### 10. [Load Balancer Solution with Nginx and SSL/TLS](./Projects_documenration/Load_Balancer_solution_with_nginx_and_ssl_tls/README.md)
 
 #### Overview:
 This project adds an Nginx-based load balancer with SSL/TLS to the DevOps Tooling Website infrastructure, replacing Apache. The setup includes configuring a secure HTTPS connection, associating an Elastic IP, and integrating a custom domain, making the infrastructure robust and secure.
@@ -148,7 +148,7 @@ The setup is verified by checking HTTPS accessibility, testing CI/CD functionali
 
 ---
 
-### 11. [Ansible Configuration Management Solution](/Projects_documentation/Ansible_Configuration_Management/README.md)
+### 11. [Ansible Configuration Management Solution](./Projects_documenration/Ansible_configuration_management/README.md)
 
 #### Overview:  
 This project extends the DevOps Tooling Website Deployment with CI/CD by integrating an Ansible workflow for automated configuration management. The Jenkins server is repurposed as a bastion host, enabling seamless Ansible playbook execution to manage the infrastructure effectively.
