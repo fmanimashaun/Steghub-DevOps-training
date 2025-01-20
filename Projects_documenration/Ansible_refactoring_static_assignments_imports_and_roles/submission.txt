@@ -1,1 +1,1 @@
-https://github.com/fmanimashaun/Steghub-DevOps-training/tree/main/Projects_documenration/Ansible_configuration_management
+https://github.com/fmanimashaun/Steghub-DevOps-training/blob/main/Projects_documenration/Ansible_refactoring_static_assignments_imports_and_roles/README.md
