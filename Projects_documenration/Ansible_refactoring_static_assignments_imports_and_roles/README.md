@@ -366,7 +366,53 @@ Follow these steps to set up the required EC2 instances:
 >- Update the security group for all instances to allow the ssh port to all instances in the subnet `172.31.0.0/20`
 
 2. Setup the SSH-agent on the local machine - vscode:
-Follow the instruction in [testing](../Ansible_configuration_management/README.md#step-1-configure-ssh-agent-on-local-machine)
+   - Follow the instruction in [Configure SSH Agent on Local Machine](../Ansible_configuration_management/README.md#step-1-configure-ssh-agent-on-local-machine)
+   - connect to the jenkins-server and ssh into the various instances from the jenkins server using their private IPs to test the ssh agent
+   - In the jenkins-server terminal run:
+   ```bash
+   ansible-playbook -i inventory/dev playbooks/site.yml
+   ```
+      ![Ansible playbook run 1](images/test-ansible-1.png)
+
+2. Update the playbook:
+   - In the repo, create a playbook `common-del.yml` inside the `static-assignments`
+   ```yml
+   ---
+   - name: Update web, nfs, and db servers
+   hosts: nfs_server, web_servers, db_server
+   become: true
+   become_user: root
+   tasks:
+      - name: Delete wireshark
+         ansible.builtin.dnf:
+         name: wireshark
+         state: removed
+
+   - name: Update LB server
+   hosts: lb_server
+   become: true
+   remote_user: ubuntu
+   become_user: root
+   tasks:
+      - name: Delete wireshark
+         ansible.builtin.apt:
+         name: wireshark
+         state: absent
+         autoremove: true
+         purge: true
+         autoclean: true
+   ```
+   - Update the `site.yml` as follows:
+   ```yml
+   ---
+   - name: Common tasks play
+     ansible.builtin.import_playbook: ../static-assignments/common-del.yml
+   ```
+   - Push the update the github and create a PR and merge the update to the main for the jenkins pipeline to copy the latest ansible code to the `/home/ubuntu/ansible-config-artifact`. ssh into the jenkin-servver using the ssh-agent and run the playbook with:
+   ```bash
+   ansible-playbook -i inventory/dev playbooks/site.yml
+   ```
+   ![Ansible playbook run 2](images/test-ansible-2.png)
 
 
 ## Future Improvements
