@@ -262,7 +262,7 @@ This webhook will notify Jenkins of any push events in the GitHub repository, tr
 
 ![github webhook](images/github-webhook.png)
 
-2. Create a New Jenkins Job
+2. <a id="create-a-new-jenkins-job"></a>Create a New Jenkins Job
 
    - Go to your Jenkins Dashboard at `http://<your-server-ip>:8080`.
    - Click **New Item**.
@@ -301,38 +301,77 @@ This webhook will notify Jenkins of any push events in the GitHub repository, tr
 ### Step 4: Jenkins Job Enhancement
 
 1. Connect to the jenkins-server via ssh and run the following commands:
+```bash
+sudo mkdir /home/ubuntu/ansible-config-artifact
+sudo chmod -R 777 /home/ubuntu/ansible-config-artifact
+sudo usermod -a -G ubuntu jenkins
+```
 
+2. Go to Jenkins web console  and Naviage to **Dashboard** -> **Manage Jenkins** -> **Plugins** -> on **Available plugins** tab search for `Copy Artifact` and install the plugin.
+    ![Copy artifact plugin](images/jenkins-copy-artifact.png)
+
+3. Create a new Freestyle project similar to the one [Step 3: Setup initial Jenkin job flow](#create-a-new-jenkins-job), however, we won't be using github to trigger this but the completion of the `ansible` job.
+   ![Discard old build](images/discard-old.png)
+   ![Trigger by another](images/trigger-by-another.png)
+
+4. Add a build step that copy the artifact from jenkins job `ansible` and send it to the `/home/ubuntu/ansible-config-artifact` on the jenkins-server
+   ![Build step 1](images/build-step-1.png)
+   ![Build step 2](images/build-step-2.png)
+
+5. Test the setup by updating the readme file of the `ansible-config-mgt` repo.
+   ![Jenkins enhancement test 1](images/jenkins-enhanced-test-1.png)
+   ![Jenkins enhancement test 2](images/jenkins-enhanced-test-2.png)
+
+### Step 5: Refactor Ansible code by importing other playbook
+
+1. Create a branch called `features/refactor`:
+
+   ```bash
+   git checkout -b features/refactor
+   ```
+
+2. Create a folder `static-assignments` in the root of the repo and move the `common.yml` inside
+
+3. Inside the `playbooks` folder, create a `site.yml` and import the common playbook inside:
+
+```yml
+---
+- name: Common tasks play
+  ansible.builtin.import_playbook: ../static-assignments/common.yml
+```
+
+### 6. Test the refactored Ansible code
+1. Setting Up AWS EC2 Instances
+
+Follow these steps to set up the required EC2 instances:
+
+   -  **Launch NFS Server**:
+      - Navigate to EC2 dashboard in AWS Console
+      - Click "Launch Instance"
+      - Choose "Red Hat Enterprise Linux 9.4" AMI
+      - Select t2.micro instance type
+
+   - **Launch Web Servers** (Repeat 3 times):
+      - Follow similar steps as NFS server
+
+   - **Launch Database Server**:
+      - Follow similar steps as NFS server
+
+   - **Launch Load balancer Server**:
+      - Follow similar steps as NFS server
+      - Choose Ubuntu Server 24.04 LTS (HVM), SSD Volume Type
+
+>**Notice:** 
+>- Ensure all instances are launched in the same subnet (availability zone). Also, update the private IP of all hosts in the `dev` inventory.
+>- Update the security group for all instances to allow the ssh port to all instances in the subnet `172.31.0.0/20`
+
+2. Setup the SSH-agent on the local machine - vscode:
+Follow the instruction in [testing](../Ansible_configuration_management/README.md#step-1-configure-ssh-agent-on-local-machine)
 
 
 ## Future Improvements
 
-While the current implementation provides a solid foundation for configuration management and automated deployment, there are several potential improvements that could be made to enhance the system's functionality, scalability, and security:
 
-1. **Multi-Environment Configuration**: 
-   - Implement more comprehensive environment-specific configurations (e.g., development, staging, production). This would involve separating sensitive configurations, such as database credentials or API keys, into secure vaults or using tools like **Ansible Vault** for encryption.
-
-2. **Enhanced Playbook Automation**: 
-   - Expand the playbooks to handle more complex tasks such as automated backups, server provisioning, or monitoring setup (e.g., integrating with tools like Prometheus or Nagios).
-
-3. **Role-based Access Control (RBAC)**: 
-   - Introduce role-based access control within Ansible to better manage permissions for various users running the playbooks. This could help control who can execute specific tasks or update particular groups of servers.
-
-4. **Integration with Containerization Tools**: 
-   - Integrate Ansible with containerization and orchestration platforms like **Docker** and **Kubernetes** for managing and deploying containerized applications, allowing for more scalable and flexible deployment pipelines.
-
-5. **Improve Error Handling and Reporting**: 
-   - Enhance the playbook's error handling capabilities to provide more detailed logs and failure reporting, improving the debugging process when things go wrong.
-
-6. **Automated Testing of Configuration Changes**: 
-   - Incorporate testing frameworks like **TestInfra** or **Molecule** into the playbook to automatically validate configuration changes and ensure that the infrastructure is in the desired state after every run.
-
-7. **Cloud Integration**: 
-   - Implement automation for cloud infrastructure management (e.g., using **AWS**, **Azure**, or **GCP**) to automate server provisioning and configuration based on cloud resources.
-
-8. **Monitoring and Notifications**: 
-   - Set up monitoring to track the health and performance of servers and provide real-time notifications (e.g., using **Slack** or **Email**) for any failed tasks or security vulnerabilities.
-
-By implementing these improvements, the solution could be expanded to handle more complex use cases, improve operational efficiency, and offer better security and reliability for large-scale deployments.
 
 
 ## References
@@ -341,34 +380,15 @@ By implementing these improvements, the solution could be expanded to handle mor
    Ansible documentation provides comprehensive information on using Ansible for automation and configuration management.  
    URL: [https://docs.ansible.com/](https://docs.ansible.com/)
 
-2. **Ansible Vault**:  
-   Ansible Vault is a tool to encrypt secrets and sensitive information within playbooks.  
-   URL: [https://docs.ansible.com/ansible/latest/user_guide/vault.html](https://docs.ansible.com/ansible/latest/user_guide/vault.html)
-
-3. **SSH-Agent Documentation**:  
-   A detailed guide on how to manage SSH keys and use the SSH agent for authentication.  
-   URL: [https://www.ssh.com/ssh-agent/](https://www.ssh.com/ssh-agent/)
-
-4. **Remote - SSH Extension for Visual Studio Code**:  
-   This extension allows you to connect to remote servers using SSH from Visual Studio Code.  
-   URL: [https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh)
-
-5. **GitHub - Ansible Config Management Repository**:  
+2. **GitHub - Ansible Config Management Repository**:  
    The repository containing the implementation and resources for the Ansible configuration management project.  
    URL: [https://github.com/fmanimashaun/ansible-config-mgt](https://github.com/fmanimashaun/ansible-config-mgt)
 
-6. **Ansible Best Practices**:  
+3. **Ansible Best Practices**:  
    A guide on how to structure Ansible projects for maximum maintainability and scalability.  
    URL: [https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html](https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html)
 
-7. **Nginx Load Balancer Documentation**:  
-   Official Nginx documentation for setting up and configuring load balancers.  
-   URL: [https://nginx.org/en/docs/](https://nginx.org/en/docs/)
-
-8. **Wireshark Installation Documentation**:  
-   The official guide for installing Wireshark, a network protocol analyzer.  
-   URL: [https://www.wireshark.org/docs/](https://www.wireshark.org/docs/)
-9. **Video demonstration**:
+4. **Video demonstration**:
    A simple demonstration of the whole project from setup to running the ansible playbook
    URL: [Video Demonstration Link](https://youtu.be/Ng4j6ldrf7Q)
 
