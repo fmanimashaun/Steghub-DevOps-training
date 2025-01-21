@@ -165,3 +165,35 @@ The solution is validated through infrastructure inspections, application deploy
 #### [Video Demonstration Link](https://youtu.be/Ng4j6ldrf7Q)  
 
 --- 
+
+Got it! Here's a revised version that reflects this dependency:
+
+---
+
+### 12. [Ansible Refactoring & Static Assignments (Imports & Roles) Solution](./Projects_documenration/Ansible_refactoring_static_assignments_imports_and_roles/README.md)
+
+#### Overview:  
+This project extends the Ansible Configuration Management Solution, focusing on enhancing the structure and maintainability of Ansible playbooks by implementing refactoring techniques and static assignments through imports and roles. These improvements ensure better scalability and organization for managing infrastructure configurations.
+
+**Key Components**:  
+1. **Refactoring Ansible Playbooks**:  
+   Playbooks are restructured into modular components using `import_playbook` and `include_tasks`, enabling easier updates and reducing complexity.  
+   
+2. **Static Assignments**:  
+   Hosts and groups are statically assigned roles and configurations, ensuring precise and predictable task execution across the infrastructure.  
+
+3. **Role-Based Architecture**:  
+   Ansible roles are used to encapsulate tasks, variables, and templates into reusable units, promoting consistency and scalability.  
+
+4. **Seamless Integration with Jenkins**:  
+   Builds on the previous project by further integrating Ansible workflows into the Jenkins pipeline, automating the deployment and configuration process.  
+
+**Testing and Validation**:  
+The solution was tested to validate:  
+- Proper execution of refactored playbooks and imported components.  
+- Accurate application of static assignments and role-based tasks.  
+- Smooth CI/CD pipeline integration using Ansible workflows.
+
+#### [Video Demonstration Link](https://youtu.be/EuSXv3BpxAI)  
+
+---

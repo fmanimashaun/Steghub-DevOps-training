@@ -636,3 +636,7 @@ By implementing these improvements, the solution will become a fully automated a
    The documentation outlining the steps for the manual deployment of the project.  
    URL: [https://github.com/fmanimashaun/devops-tooling-website](https://github.com/fmanimashaun/devops-tooling-website)
 
+9. **Video demonstration**:
+   A simple demonstration of the whole project from setup to running the ansible playbook
+   URL: [Video Demonstration Link](https://youtu.be/EuSXv3BpxAI)
+
