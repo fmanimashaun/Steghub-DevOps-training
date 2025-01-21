@@ -164,10 +164,6 @@ The solution is validated through infrastructure inspections, application deploy
 
 #### [Video Demonstration Link](https://youtu.be/Ng4j6ldrf7Q)  
 
---- 
-
-Got it! Here's a revised version that reflects this dependency:
-
 ---
 
 ### 12. [Ansible Refactoring & Static Assignments (Imports & Roles) Solution](./Projects_documenration/Ansible_refactoring_static_assignments_imports_and_roles/README.md)
