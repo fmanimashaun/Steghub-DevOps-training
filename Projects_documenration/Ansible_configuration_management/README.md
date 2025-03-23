@@ -192,7 +192,7 @@ VS Code’s **Remote - SSH** extension allows developers to seamlessly work on r
 
 
 ## Implementation
-### Step 1: Configure SSH Agent on Local Machine
+### Step 1A: Configure SSH Agent on Local Machine (Unix-like system - linux or mac)
 
 1. Open **Visual Studio Code** and initialize the SSH agent:
 
@@ -207,6 +207,73 @@ VS Code’s **Remote - SSH** extension allows developers to seamlessly work on r
 2. Use **Remote SSH** in VS Code to connect to the remote host. Configure the `~/.ssh/config` file when prompted:
 
    ```bash
+   Host jenkins-ansible
+     HostName ec2-13-39-37-8.eu-west-3.compute.amazonaws.com
+     User ubuntu
+     IdentityFile ~/devops-training/sample-server.pem
+     ForwardAgent yes
+     AddKeysToAgent yes
+     ControlMaster auto
+     ControlPath ~/.ssh/sockets/%h-%p-%r
+     ControlPersist 60s
+   ```
+![ssh agent config](./images/ssh-agent-config.png)
+   > **Note:** If the `~/.ssh/config` file does not exist, create it manually using `touch ~/.ssh/config`.
+
+3. Create the socket directory to enable multiplexed connections:
+
+   ```bash
+   mkdir -p ~/.ssh/sockets
+   ```
+
+4. Save the configuration and connect. If successful, VS Code will establish an SSH connection to the `jenkins-ansible` server.
+
+![remote ssh vscode](./images/remote-ssh-1.png)
+![remote ssh vscode](./images/remote-ssh-2.png)
+
+
+### Step 1B: Configure SSH Agent on Local Machine (Windows)
+
+1. Open PowerShell as an Administrator and Enable and Start the ssh-agent Service:
+
+   ```powershell
+   Set-Service -Name ssh-agent -StartupType Manual
+   Start-Service ssh-agent
+   ```
+   >The first command sets the service's startup type to manual, allowing it to be started as needed. The second command starts the service immediately.
+
+2. Verify the Service Status:
+
+   ```powershell
+   Get-Service ssh-agent
+   ```
+
+   >You should see the status as Running:
+   ```powershell
+   Status   Name               DisplayName
+   ------   ----               -----------
+   Running  ssh-agent          OpenSSH Authentication Agent
+   ```
+   
+3. Add Your SSH Key to the Agent via git bash:
+   
+   ```bash
+   ssh-add ~/.ssh/sample.pem
+   ```
+
+4. To confirm that the key has been added, run on git bash:
+   
+    ```bash
+   ssh-add -l
+   ```
+   >This command should list your SSH keys currently managed by the agent.
+
+![ssh agent](./images/ssh-agent.png)
+   > **Note:** Replace `~/path_to_the_private_key` with the actual path to your private key file (e.g., `~/.ssh/id_rsa`). Ensure that the private key has proper permissions (e.g., `chmod 600`).
+
+2. Use **Remote SSH** in VS Code to connect to the remote host. Configure the `~/.ssh/config` file when prompted:
+
+   ```ini
    Host jenkins-ansible
      HostName ec2-13-39-37-8.eu-west-3.compute.amazonaws.com
      User ubuntu
