@@ -213,9 +213,6 @@ VS Code’s **Remote - SSH** extension allows developers to seamlessly work on r
      IdentityFile ~/devops-training/sample-server.pem
      ForwardAgent yes
      AddKeysToAgent yes
-     ControlMaster auto
-     ControlPath ~/.ssh/sockets/%h-%p-%r
-     ControlPersist 60s
    ```
 ![ssh agent config](./images/ssh-agent-config.png)
    > **Note:** If the `~/.ssh/config` file does not exist, create it manually using `touch ~/.ssh/config`.
