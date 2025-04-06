@@ -3,15 +3,12 @@
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Overview](#project-overview)
-3. [Architecture Workflow](#architecture-overview)
+3. [Architecture Overview](#architecture-overview)
 4. [Prerequisites](#prerequisites)
-5. [AWS setup overview](#aws-setup-overview)
-6. [Self-Study](#self-study)
-	 - [Reusing Ansible Artifacts](#reusing-ansible-artifacts)
-7. [Implementation](#implementation)
-8. [Testing and Validation](#testing-and-validation)
-9. [Future Improvements](#future-improvements)
-10. [References](#references)
+5. [Self-Study](#self-study)
+6. [Implementation](#implementation)
+7. [Future Improvements](#future-improvements)
+8. [References](#references)
 
 ## Introduction
 Building on the foundation of [Ansible Refactoring & Static Assignments (Imports & Roles)](../Ansible_refactoring_static_assignments_imports_and_roles/README.md), this project introduces dynamic automation and community-driven collaboration to elevate the [DevOps Tooling Solution](../DevOps_tooling_website_solution/README.md) into a fully scalable, secure, and adaptable 3-tier application. By leveraging Ansible’s include module for runtime flexibility and integrating pre-built community roles alongside custom logic, we streamline the deployment of a robust architecture featuring load balancers, web servers, a database, and shared storage. This approach not only enhances maintainability but also aligns with industry best practices for infrastructure-as-code (IaC), enabling seamless scaling and environment consistency.
