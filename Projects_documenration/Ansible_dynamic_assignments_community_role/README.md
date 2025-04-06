@@ -718,23 +718,227 @@ ansible-playbook -i inventory/dev.yml playbooks/site.yml
 
 ### 3. Creating custom NFS role for NFS server:
 
-To align  our ansible appoach to the [DevOps Tooling Website Solution](../DevOps_tooling_website_solution/README.md) project
+To align  our ansible appoach to the [DevOps Tooling Website Solution](../DevOps_tooling_website_solution/README.md) project, a new role (`nfs-server`) using the following:
 
+```bash
+cd roles
+
+ansible-galaxy init nfs-server
+```
+
+And Adjust the directory created to align with the following:
+
+```markdown
+📦nfs-server
+ ┣ 📂defaults
+ ┃ ┗ 📜main.yml
+ ┣ 📂handlers
+ ┃ ┗ 📜main.yml
+ ┣ 📂meta
+ ┃ ┗ 📜main.yml
+ ┣ 📂tasks
+ ┃ ┣ 📜export.yml
+ ┃ ┣ 📜install_nfs.yml
+ ┃ ┣ 📜lvm.yml
+ ┃ ┣ 📜main.yml
+ ┃ ┗ 📜repo_clone.yml
+ ┣ 📂templates
+ ┃ ┗ 📜exports.j2
+ ┗ 📜README.md
+```
+The who idea here is to create NFS server using ansible and configure it to align with the [DevOps Tooling Website Solution](../DevOps_tooling_website_solution/README.md).
+
+![NFS playbook](./images/nfs-server-playbook.png)
+
+### 4. Creating custom load balancer role for load balancer server:
+
+Same as the NFS role, create two separate roles `nginx_lb` and `apache_lb`:
+
+- **nginx_lb**
+
+   ```markdown
+   📦nginx_lb
+      ┣ 📂defaults
+      ┃ ┗ 📜main.yml
+      ┣ 📂handlers
+      ┃ ┗ 📜main.yml
+      ┣ 📂meta
+      ┃ ┗ 📜main.yml
+      ┣ 📂tasks
+      ┃ ┣ 📜configure_lb.yml
+      ┃ ┣ 📜main.yml
+      ┃ ┣ 📜ssl_lb.yml
+      ┃ ┗ 📜update_hosts.yml
+      ┣ 📂templates
+      ┃ ┣ 📜hosts_web_servers.j2
+      ┃ ┗ 📜load_balancer.conf.j2
+      ┗ 📜README.md
+   ```
+
+- **apache_lb**
+
+   ```markdown
+   📦apache_lb
+      ┣ 📂defaults
+      ┃ ┗ 📜main.yml
+      ┣ 📂handlers
+      ┃ ┗ 📜main.yml
+      ┣ 📂meta
+      ┃ ┗ 📜main.yml
+      ┣ 📂tasks
+      ┃ ┣ 📜configure_lb.yml
+      ┃ ┣ 📜main.yml
+      ┃ ┣ 📜ssl_lb.yml
+      ┃ ┗ 📜update_hosts.yml
+      ┣ 📂templates
+      ┃ ┣ 📜hosts_web_servers.j2
+      ┃ ┗ 📜load_balancer.conf.j2
+      ┗ 📜README.md
+   ```
+
+We added a dedicated `cleanup_lb` role to help stop any of the load balancer server no in use:
+
+- **cleanup_lb**
+
+   ```markdown
+   📦cleanup_lb
+   ┣ 📂defaults
+   ┃ ┗ 📜main.yml
+   ┣ 📂handlers
+   ┃ ┗ 📜main.yml
+   ┣ 📂meta
+   ┃ ┗ 📜main.yml
+   ┣ 📂tasks
+   ┃ ┣ 📜apache_cleanup.yml
+   ┃ ┣ 📜main.yml
+   ┃ ┗ 📜nginx_cleanup.yml
+   ┣ 📂templates
+   ┗ 📜README.md
+   ```
+
+   We have updated the dynamic assignment for `uat`:
+
+   ```yml
+   # Define databases and users to be created for the uat environment
+   mysql_databases:
+   - name: "tooling"
+   encoding: "utf8"
+   collation: "utf8_general_ci"
+
+   mysql_users:
+   - name: "webaccess"
+   host: "172.31.%"
+   password: "Password@1"
+   priv: "tooling.*:ALL"
+
+   tooling_repo: "https://github.com/fmanimashaun/tooling.git"
+
+   # Define the PHP version and repositories
+   epel_repo_url: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm"
+   epel_gpg_key_url: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9"
+   # remi_repo_url: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
+   # remi_gpg_key_url: "https://rpms.remirepo.net/RPM-GPG-KEY-remi"
+   php_version: "8.4"
+
+
+   remi_package_url: "https://rpms.remirepo.net/enterprise/remi-release-{{ ansible_distribution_major_version }}.rpm"
+   remi_gpg_key_url: "https://rpms.remirepo.net/enterprise/{{ ansible_distribution_major_version }}/RPM-GPG-KEY-remi"
+
+   # Define the PHP extensions as a list
+   php_extensions:
+   - php-opcache
+   - php-gd
+   - php-curl
+   - php-mysqlnd
+   - php-xml
+   - php-json
+   - php-mbstring
+   - php-intl
+   - php-soap
+   - php-zip
+
+   # allow subnet
+   nfs_allowed_subnet: "172.31.0.0/20"
+
+   # Enable Load balancer
+   nginx_lb_enabled: false
+   apache_lb_enabled: true
+   load_balancer_is_required: true
+   certbot_email: "fisayo.animashaun@outlook.com"
+   ```
+   >Note: you can always set which of the load balancer to use by setting it to `true` or `false`
+
+   Then update the `site.yml` to take note of the new role:
+
+   ```yml
+   ---
+   - name: Load dynamic variables
+   hosts: all
+   become: true
+   tasks:
+      - name: Include environment variables from dynamic assignments
+         ansible.builtin.include_tasks: "../dynamics-assignments/env-vars.yml"
+   tags:
+      - always
+
+   # Set up MySQL on database servers
+   - name: Set up MySQL
+   hosts: db_server
+   become: true
+   roles:
+      - dbserver
+
+   # Set up NFS server
+   - name: Set up NFS server
+   hosts: nfs_server
+   become: true
+   roles:
+      - nfs-server
+
+   # Set up Apache and PHP on web servers
+   - name: Import webservers play
+   ansible.builtin.import_playbook: "../static-assignments/uat-webserver.yml"
+
+   # Configure load balancers
+   - name: Configure load balancer
+   hosts: lb_servers
+   roles:
+      - { role: cleanup_lb }
+      - { role: nginx_lb, when: load_balancer_is_required and nginx_lb_enabled }
+      - { role: apache_lb, when: load_balancer_is_required and apache_lb_enabled }
+   ```
+
+   Run the ansible-playbook command from the root directory.
+
+   ```bash
+   ansible-playbook -i inventory/dev.yml playbooks/site.yml
+   ```
+![final playbook result](./images/final-playbook-result.png)
 
 ## Future Improvements
 
-To streamline and enhance the deployment process of the [DevOps Tooling Website Solution](/Projects_documenration/DevOps_tooling_website_solution/README.md), the following future improvements are proposed:
+**Future Improvements** <a name="future-improvements"></a>  
+To evolve this solution into a fully autonomous infrastructure-as-code (IaC) system, the following enhancements are planned:
 
-1. **Automated Deployment Using Ansible**  
-   Transition from manual deployment to a fully automated process by configuring the database, NFS server, and web server using Ansible. This ensures consistency, reduces human error, and speeds up deployments.
+1. **Automated EC2 Provisioning with Ansible**  
+   Replace manual instance creation with Ansible's `amazon.aws.ec2_instance` module to:  
+   - Auto-launch tagged EC2 instances (NFS: 3x15GB EBS, DB: 3x10GB EBS)  
+   - Dynamically configure security groups for SSH, HTTP/HTTPS, and NFS traffic  
+   - Attach EBS volumes using Ansible's `amazon.aws.ec2_vol` module  
 
-2. **Integration with Jenkins Workflows**  
-   Integrate Ansible playbooks into Jenkins workflows to create a robust CI/CD pipeline. This will enable end-to-end automation of the deployment process, from infrastructure provisioning to application updates.
+2. **Jenkins Pipeline Integration**  
+   Develop CI/CD workflows that:  
+   - Trigger Ansible playbooks on Git commits  
+   - Auto-generate infrastructure diagrams post-deployment  
+   - Perform smoke tests using Molecule  
 
-3. **Implementation of a Load Balancer**  
-   Add a load balancer to distribute incoming traffic across multiple web servers, improving fault tolerance, scalability, and user experience.
+3. **Dynamic Auto-Scaling Implementation**  
+   Enhance load balancing with:  
+   - CloudWatch-driven scaling policies  
+   - Self-healing instance groups  
+   - Cost-optimized spot instance integration  
 
-By implementing these improvements, the solution will become a fully automated and scalable system, aligning with DevOps best practices for deployment and management.
+This roadmap aims to achieve 90% reduction in manual interventions while maintaining PCI-DSS compliance standards.
 
 
 ## References
@@ -761,5 +965,5 @@ By implementing these improvements, the solution will become a fully automated a
 
 9. **Video demonstration**:
    A simple demonstration of the whole project from setup to running the ansible playbook
-   URL: [Video Demonstration Link](https://youtu.be/EuSXv3BpxAI)
+   URL: [Video Demonstration Link](#)
 
