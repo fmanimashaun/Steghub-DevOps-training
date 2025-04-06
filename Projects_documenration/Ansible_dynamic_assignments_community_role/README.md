@@ -911,6 +911,8 @@ We added a dedicated `cleanup_lb` role to help stop any of the load balancer ser
    ansible-playbook -i inventory/dev.yml playbooks/site.yml
    ```
 ![final playbook result](./images/final-playbook-result.png)
+![Apache lb](./images/apache.png)
+![Nginx lb](./images/nginx.png)
 
 ## Future Improvements
 
